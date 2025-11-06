@@ -106,6 +106,13 @@ const feed = {
     $('#mediaUpload')?.addEventListener('change', (e) => {
       feed.handleMediaPreview(e.target.files);
     });
+
+    // Close any open dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.post-dropdown')) {
+        feed.closeAllDropdowns();
+      }
+    });
   },
 
   // Update sort tabs UI
@@ -161,14 +168,23 @@ const feed = {
       // Comment button
       $(`#commentBtn-${post.id}`)?.addEventListener('click', () => feed.toggleComments(post.id));
       
-      // Edit button
-      $(`#editBtn-${post.id}`)?.addEventListener('click', () => feed.handleEditPost(post.id));
+      // Dropdown toggle
+      $(`#dropdownToggle-${post.id}`)?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        feed.toggleDropdown(post.id);
+      });
       
-      // Delete button
-      $(`#deleteBtn-${post.id}`)?.addEventListener('click', () => feed.handleDeletePost(post.id));
+      // Edit option
+      $(`#editBtn-${post.id}`)?.addEventListener('click', () => {
+        feed.closeAllDropdowns();
+        feed.handleEditPost(post.id);
+      });
       
-      // Dev delete button
-      $(`#devDeleteBtn-${post.id}`)?.addEventListener('click', () => feed.handleDeletePost(post.id));
+      // Delete option
+      $(`#deleteBtn-${post.id}`)?.addEventListener('click', () => {
+        feed.closeAllDropdowns();
+        feed.handleDeletePost(post.id);
+      });
       
       // Follow button
       $(`#followBtn-${post.id}`)?.addEventListener('click', () => feed.handleFollow(post.username));
@@ -179,7 +195,7 @@ const feed = {
   renderPost: (post) => {
     const session = store.session.load();
     const isOwnPost = session && post.username === session.username;
-    const isDevMode = store.devMode.isActive();
+    const isDevMode = store.devMode?.isActive ? store.devMode.isActive() : false;
     const isFollowing = session && store.follows.isFollowing(session.username, post.username);
     
     const tags = post.tags.map(tag => `<span class="tag">${sanitize(tag)}</span>`).join('');
@@ -271,13 +287,16 @@ const feed = {
     const profile = store.profiles.get(post.username);
     const level = getLevel(profile.profileScore || 0);
     
-    const editDeleteButtons = isOwnPost ? `
-      <button class="btn btn-sm btn-outline" id="editBtn-${post.id}">✏️ Edit</button>
-      <button class="btn btn-sm btn-outline" id="deleteBtn-${post.id}">🗑 Delete</button>
-    ` : '';
-    
-    const devDeleteButton = isDevMode && !isOwnPost ? `
-      <button class="btn btn-sm btn-outline dev-delete-btn" id="devDeleteBtn-${post.id}" title="Developer Mode: Delete (Dev)">🗑 Delete (Dev)</button>
+    const dropdownMenu = isOwnPost ? `
+      <div class="post-dropdown">
+        <button class="post-dropdown-toggle" id="dropdownToggle-${post.id}" aria-label="Post options">
+          <span>⋯</span>
+        </button>
+        <div class="post-dropdown-menu" id="dropdownMenu-${post.id}">
+          <button class="post-dropdown-item" id="editBtn-${post.id}"><span>✏️</span> Edit Post</button>
+          <button class="post-dropdown-item" id="deleteBtn-${post.id}"><span>🗑</span> Delete Post</button>
+        </div>
+      </div>
     ` : '';
     
     const followButton = session && !isOwnPost ? `
@@ -302,8 +321,7 @@ const feed = {
             ${followButton}
           </div>
           <div class="post-header-actions">
-            ${editDeleteButtons}
-            ${devDeleteButton}
+            ${dropdownMenu}
             <time class="post-time">${formatTime(post.createdAt)}</time>
           </div>
         </div>
@@ -629,6 +647,26 @@ const feed = {
     } catch (e) {
       ui.toast('Failed to update follow status', 'error');
     }
+  },
+
+  // Toggle dropdown menu
+  toggleDropdown: (postId) => {
+    const menu = $(`#dropdownMenu-${postId}`);
+    if (!menu) return;
+    // Close other dropdowns
+    feed.closeAllDropdowns(postId);
+    menu.classList.toggle('active');
+  },
+
+  // Close all dropdowns
+  closeAllDropdowns: (exceptPostId = null) => {
+    $$('.post-dropdown-menu').forEach(menu => {
+      if (exceptPostId) {
+        const id = menu.id.replace('dropdownMenu-', '');
+        if (id === exceptPostId) return;
+      }
+      menu.classList.remove('active');
+    });
   }
 };
 
