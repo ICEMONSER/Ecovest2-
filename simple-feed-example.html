@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simple Post Feed - Firebase</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .post-box {
+      @apply bg-white p-4 rounded-lg shadow-md mb-4;
+    }
+    .post-item {
+      @apply bg-gray-50 p-4 rounded-lg mb-3 border border-gray-200;
+    }
+    .delete-btn {
+      @apply bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-8">
+  <div class="max-w-2xl mx-auto">
+    <h1 class="text-3xl font-bold mb-6">Simple Post Feed</h1>
+    
+    <!-- Post Input Box -->
+    <div class="post-box">
+      <input 
+        id="postInput" 
+        type="text" 
+        placeholder="Write something..." 
+        class="w-full p-3 border border-gray-300 rounded mb-3"
+      >
+      <button 
+        id="postBtn" 
+        class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600"
+      >
+        Post
+      </button>
+    </div>
+    
+    <!-- Feed Container -->
+    <div id="feed" class="mt-4"></div>
+  </div>
+
+  <!-- Firebase SDK v9+ (Modular) -->
+  <script type="module">
+    // Import Firebase functions
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, push, onValue, remove, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyD3v99P_uq3cIMIUUKroFr_qbcLsbY-i3Q",
+      authDomain: "ecovest-37a65.firebaseapp.com",
+      databaseURL: "https://ecovest-37a65-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "ecovest-37a65",
+      storageBucket: "ecovest-37a65.firebasestorage.app",
+      messagingSenderId: "63854480161",
+      appId: "1:63854480161:web:bf94c2bbd0c5b4c4650c60",
+      measurementId: "G-H7LTK1KPPM"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+
+    // Current user (for demo - in real app, get from auth)
+    const currentUser = prompt("Enter your username:") || "Anonymous";
+
+    // Get DOM elements
+    const postInput = document.getElementById('postInput');
+    const postBtn = document.getElementById('postBtn');
+    const feed = document.getElementById('feed');
+
+    /**
+     * Create a new post and save to Firebase
+     */
+    async function createPost() {
+      const content = postInput.value.trim();
+      if (!content) {
+        alert('Please write something!');
+        return;
+      }
+
+      try {
+        // Create post data
+        const postData = {
+          username: currentUser,
+          content: content,
+          timestamp: Date.now()
+        };
+
+        // Save to Firebase under 'posts/'
+        const postsRef = ref(database, 'posts');
+        await push(postsRef, postData);
+
+        // Clear input
+        postInput.value = '';
+        console.log('✅ Post created successfully!');
+      } catch (error) {
+        console.error('❌ Error creating post:', error);
+        alert('Failed to create post. Please try again.');
+      }
+    }
+
+    /**
+     * Delete a post (only if it's your own)
+     */
+    async function deletePost(postId) {
+      if (!confirm('Are you sure you want to delete this post?')) {
+        return;
+      }
+
+      try {
+        const postRef = ref(database, `posts/${postId}`);
+        await remove(postRef);
+        console.log('✅ Post deleted successfully!');
+      } catch (error) {
+        console.error('❌ Error deleting post:', error);
+        alert('Failed to delete post. Please try again.');
+      }
+    }
+
+    /**
+     * Render all posts in the feed
+     */
+    function renderPosts(posts) {
+      if (posts.length === 0) {
+        feed.innerHTML = '<p class="text-gray-500 text-center py-8">No posts yet. Be the first to post!</p>';
+        return;
+      }
+
+      // Sort posts by timestamp (newest first)
+      const sortedPosts = posts.sort((a, b) => b.timestamp - a.timestamp);
+
+      // Render each post
+      feed.innerHTML = sortedPosts.map(post => {
+        const isOwnPost = post.username === currentUser;
+        const deleteButton = isOwnPost 
+          ? `<button class="delete-btn" onclick="window.deletePost('${post.id}')">Delete</button>`
+          : '';
+
+        const timeAgo = formatTimeAgo(post.timestamp);
+
+        return `
+          <div class="post-item">
+            <div class="flex justify-between items-start mb-2">
+              <div>
+                <span class="font-semibold text-blue-600">${escapeHtml(post.username)}</span>
+                <span class="text-gray-500 text-sm ml-2">${timeAgo}</span>
+              </div>
+              ${deleteButton}
+            </div>
+            <p class="text-gray-800">${escapeHtml(post.content)}</p>
+          </div>
+        `;
+      }).join('');
+    }
+
+    /**
+     * Format timestamp to "X minutes ago" format
+     */
+    function formatTimeAgo(timestamp) {
+      const now = Date.now();
+      const diff = now - timestamp;
+      const minutes = Math.floor(diff / 60000);
+      const hours = Math.floor(diff / 3600000);
+      const days = Math.floor(diff / 86400000);
+
+      if (minutes < 1) return 'just now';
+      if (minutes < 60) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+      if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+      return `${days} day${days > 1 ? 's' : ''} ago`;
+    }
+
+    /**
+     * Escape HTML to prevent XSS
+     */
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    /**
+     * Set up real-time listener for posts
+     * This automatically updates the feed when new posts are added
+     */
+    function setupRealtimeListener() {
+      const postsRef = ref(database, 'posts');
+      
+      // Listen for changes - fires immediately and on every update
+      onValue(postsRef, (snapshot) => {
+        const posts = [];
+        
+        if (snapshot.exists()) {
+          snapshot.forEach((child) => {
+            posts.push({
+              id: child.key,
+              ...child.val()
+            });
+          });
+        }
+        
+        console.log(`📥 Loaded ${posts.length} posts from Firebase`);
+        renderPosts(posts);
+      }, (error) => {
+        console.error('❌ Error loading posts:', error);
+        feed.innerHTML = '<p class="text-red-500 text-center py-8">Error loading posts. Please refresh the page.</p>';
+      });
+    }
+
+    // Event listeners
+    postBtn.addEventListener('click', createPost);
+    postInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        createPost();
+      }
+    });
+
+    // Make deletePost available globally (for onclick handlers)
+    window.deletePost = deletePost;
+
+    // Set up real-time listener when page loads
+    console.log('🔄 Setting up real-time listener...');
+    setupRealtimeListener();
+    console.log('✅ Real-time listener active - posts will update automatically!');
+  </script>
+</body>
+</html>
+
