@@ -1,49 +1,93 @@
-// Authentication module
+// Authentication module - Uses Firebase Auth if available, falls back to localStorage
 
 const auth = {
-  // Sign in
+  // Sign in - Uses Firebase Auth
   signIn: async (email, password) => {
-    // Mock authentication - in real app, this would validate against server
     if (!email || !password) {
       return { success: false, error: 'Email and password are required' };
     }
 
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, CONFIG.API_DELAY));
+    // Check if Firebase is properly initialized (with safe checks)
+    const isFirebaseReady = typeof firebaseServices !== 'undefined' && 
+                           firebaseServices && 
+                           typeof firebaseServices.isInitialized === 'function' && 
+                           firebaseServices.isInitialized() && 
+                           typeof firebaseAuth !== 'undefined' &&
+                           firebaseAuth &&
+                           typeof firebaseAuth.signIn === 'function';
 
-    // Check if account exists
-    const account = store.accounts.getByEmail(email);
-    if (!account) {
-      return { success: false, error: 'Invalid email or password' };
+    // Use Firebase Auth if available
+    if (isFirebaseReady) {
+      try {
+        // Add timeout to prevent hanging
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Sign in timeout. Please check your connection.')), 10000)
+        );
+        
+        const result = await Promise.race([
+          firebaseAuth.signIn(email, password),
+          timeoutPromise
+        ]);
+        
+        if (result && result.success) {
+          ui.toast('Signed in successfully!', 'success');
+          ui.mountNav();
+          ui.closeModal('signInModal');
+          if (window.location.pathname.includes('index.html') || window.location.pathname.endsWith('/')) {
+            window.location.href = './feed.html';
+          }
+        }
+        return result || { success: false, error: 'Sign in failed' };
+      } catch (error) {
+        console.error('Sign in error:', error);
+        // If Firebase fails, try localStorage fallback
+        console.log('Firebase sign-in failed, trying localStorage fallback...');
+      }
     }
 
-    // In real app, verify password hash here
-    // For demo: accept any password for existing accounts
+    // Fallback to localStorage (for development/testing) - NO DELAY
+    try {
+      console.log('Using localStorage fallback for sign-in');
+      const account = store.accounts.getByEmail(email);
+      
+      if (!account) {
+        console.log('Account not found for email:', email);
+        console.log('Available accounts:', Object.keys(store.accounts.getAll()));
+        return { success: false, error: 'No account found with this email. Please sign up first.' };
+      }
 
-    const session = {
-      username: account.username,
-      email: account.email,
-      loggedInAt: Date.now()
-    };
+      console.log('Account found:', account.username);
+      
+      // In localStorage mode, accept any password for existing accounts (for demo)
+      // In production with Firebase, password is verified by Firebase
+      
+      const session = {
+        username: account.username,
+        email: account.email,
+        loggedInAt: Date.now()
+      };
 
-    store.session.save(session);
-    ui.toast('Signed in successfully!', 'success');
-    
-    // Update nav
-    ui.mountNav();
-    
-    // Close modal
-    ui.closeModal('signInModal');
+      const saved = store.session.save(session);
+      if (!saved) {
+        return { success: false, error: 'Failed to save session' };
+      }
 
-    // Redirect to feed if on home page
-    if (window.location.pathname.includes('index.html') || window.location.pathname.endsWith('/')) {
-      window.location.href = './feed.html';
+      ui.toast('Signed in successfully!', 'success');
+      ui.mountNav();
+      ui.closeModal('signInModal');
+
+      if (window.location.pathname.includes('index.html') || window.location.pathname.endsWith('/')) {
+        window.location.href = './feed.html';
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('LocalStorage sign-in error:', error);
+      return { success: false, error: 'Sign in failed: ' + (error.message || 'Unknown error') };
     }
-
-    return { success: true };
   },
 
-  // Sign up
+  // Sign up - Uses Firebase Auth
   signUp: async (username, email, password, confirmPassword) => {
     if (!username || !email || !password) {
       return { success: false, error: 'All fields are required' };
@@ -63,22 +107,38 @@ const auth = {
       return { success: false, error: 'Password must be at least 6 characters' };
     }
 
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, CONFIG.API_DELAY));
+    // Use Firebase Auth if available
+    const isFirebaseReadySignUp = typeof firebaseServices !== 'undefined' && 
+                                   firebaseServices && 
+                                   firebaseServices.isInitialized() && 
+                                   typeof firebaseAuth !== 'undefined' &&
+                                   firebaseAuth;
+    
+    if (isFirebaseReadySignUp) {
+      const result = await firebaseAuth.signUp(username, email, password, confirmPassword);
+      if (result.success) {
+        ui.toast('Account created successfully! Complete the trading game to get started! 🎮', 'success', 4000);
+        ui.mountNav();
+        ui.closeModal('signUpModal');
+        if (window.location.pathname.includes('index.html') || window.location.pathname.endsWith('/')) {
+          window.location.href = './feed.html';
+        }
+      }
+      return result;
+    }
 
-    // Check if email already exists (one account per email)
+    // Fallback to localStorage (for development/testing)
+    await new Promise(resolve => setTimeout(resolve, CONFIG.API_DELAY));
     const existingAccount = store.accounts.getByEmail(email);
     if (existingAccount) {
       return { success: false, error: 'Email already registered. Please sign in instead.' };
     }
 
-    // Create account (in real app, hash password)
     const accountResult = store.accounts.create(email, username.trim(), password);
     if (!accountResult.success) {
       return accountResult;
     }
 
-    // Create session
     const session = {
       username: username.trim(),
       email: email.trim().toLowerCase(),
@@ -86,8 +146,6 @@ const auth = {
     };
 
     store.session.save(session);
-    
-    // Initialize user profile
     store.profiles.update(username.trim(), {
       username: username.trim(),
       profileScore: 0,
@@ -112,13 +170,19 @@ const auth = {
     return { success: true };
   },
 
-  // Logout
-  logout: () => {
+  // Logout - Uses Firebase Auth
+  logout: async () => {
+    if (typeof firebaseServices !== 'undefined' && 
+        firebaseServices && 
+        firebaseServices.isInitialized() && 
+        typeof firebaseAuth !== 'undefined' &&
+        firebaseAuth) {
+      await firebaseAuth.signOut();
+    }
     store.session.clear();
     ui.toast('Logged out successfully', 'info');
     ui.mountNav();
     
-    // Redirect to home
     if (!window.location.pathname.includes('index.html') && !window.location.pathname.endsWith('/')) {
       window.location.href = './index.html';
     } else {
@@ -128,17 +192,42 @@ const auth = {
 
   // Check if user is logged in
   isAuthenticated: () => {
+    if (typeof firebaseServices !== 'undefined' && 
+        firebaseServices && 
+        firebaseServices.isInitialized() && 
+        typeof firebaseAuth !== 'undefined' &&
+        firebaseAuth) {
+      return firebaseAuth.isAuthenticated();
+    }
     return store.session.load() !== null;
   },
 
   // Get current user
   getCurrentUser: () => {
+    if (typeof firebaseServices !== 'undefined' && 
+        firebaseServices && 
+        firebaseServices.isInitialized() && 
+        typeof firebaseAuth !== 'undefined' &&
+        firebaseAuth) {
+      return firebaseAuth.getCurrentUser();
+    }
     return store.session.load();
   },
 
   // Request password reset - sends OTP to email
   requestPasswordReset: async (email) => {
     if (!email) return { success: false, error: 'Email is required' };
+    
+    // Use Firebase Auth if available
+    if (typeof firebaseServices !== 'undefined' && 
+        firebaseServices && 
+        firebaseServices.isInitialized() && 
+        typeof firebaseAuth !== 'undefined' &&
+        firebaseAuth) {
+      return await firebaseAuth.requestPasswordReset(email);
+    }
+    
+    // Fallback to localStorage + EmailJS
     const account = store.accounts.getByEmail(email);
     await new Promise(resolve => setTimeout(resolve, CONFIG.API_DELAY));
     if (!account) return { success: false, error: 'No account found for this email' };
@@ -221,13 +310,20 @@ const auth = {
   // Verify OTP before allowing password reset
   verifyOTP: async (otp, email) => {
     if (!otp || !email) return { success: false, error: 'OTP and email are required' };
-    await new Promise(resolve => setTimeout(resolve, CONFIG.API_DELAY));
     
+    if (typeof firebaseServices !== 'undefined' && 
+        firebaseServices && 
+        firebaseServices.isInitialized() && 
+        typeof firebaseAuth !== 'undefined' &&
+        firebaseAuth) {
+      return await firebaseAuth.verifyOTP(otp, email);
+    }
+    
+    await new Promise(resolve => setTimeout(resolve, CONFIG.API_DELAY));
     const result = store.passwordResets.verifyOTP(otp, email);
     if (!result.valid) {
       return { success: false, error: result.error };
     }
-    
     return { success: true, email: result.email };
   },
 
@@ -237,8 +333,15 @@ const auth = {
     if (newPassword !== confirmPassword) return { success: false, error: 'Passwords do not match' };
     if (newPassword.length < 6) return { success: false, error: 'Password must be at least 6 characters' };
 
-    await new Promise(resolve => setTimeout(resolve, CONFIG.API_DELAY));
+    if (typeof firebaseServices !== 'undefined' && 
+        firebaseServices && 
+        firebaseServices.isInitialized() && 
+        typeof firebaseAuth !== 'undefined' &&
+        firebaseAuth) {
+      return await firebaseAuth.resetPassword(email, newPassword, confirmPassword);
+    }
 
+    await new Promise(resolve => setTimeout(resolve, CONFIG.API_DELAY));
     const ok = store.maintenance.updatePasswordByEmail(email, newPassword);
     if (!ok) return { success: false, error: 'Failed to update password' };
     return { success: true };
@@ -247,6 +350,15 @@ const auth = {
   // Delete current account (requires confirmation)
   deleteAccount: async (confirmationText) => {
     const REQUIRED = 'DELETE MY ACCOUNT';
+    
+    if (typeof firebaseServices !== 'undefined' && 
+        firebaseServices && 
+        firebaseServices.isInitialized() && 
+        typeof firebaseAuth !== 'undefined' &&
+        firebaseAuth) {
+      return await firebaseAuth.deleteAccount(confirmationText);
+    }
+    
     const session = store.session.load();
     if (!session) return { success: false, error: 'Not authenticated' };
     if (confirmationText !== REQUIRED) return { success: false, error: `Please type "${REQUIRED}" to confirm` };

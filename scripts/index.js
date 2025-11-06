@@ -38,15 +38,25 @@ const home = {
         }
 
         const submitBtn = signInForm.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
         submitBtn.disabled = true;
         submitBtn.textContent = 'Signing in...';
 
-        const result = await auth.signIn(email, password);
+        try {
+          const result = await auth.signIn(email, password);
 
-        if (!result.success) {
-          ui.toast(result.error || 'Sign in failed', 'error');
+          if (!result || !result.success) {
+            const errorMsg = result?.error || 'Sign in failed. Please check your credentials.';
+            ui.toast(errorMsg, 'error');
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+          }
+          // If successful, auth.signIn handles redirect, so button stays disabled
+        } catch (error) {
+          console.error('Sign in error:', error);
+          ui.toast(error.message || 'Sign in failed. Please try again.', 'error');
           submitBtn.disabled = false;
-          submitBtn.textContent = 'Sign In';
+          submitBtn.textContent = originalText;
         }
       });
     }

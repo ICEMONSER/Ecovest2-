@@ -1,8 +1,74 @@
-// Mock API functions
+// API functions - Uses Firebase if available, falls back to localStorage
 
 const api = {
-  // Posts
+  // Posts - Uses Firebase Realtime Database
   getPosts: async (sortBy = 'new') => {
+    // Use Firebase if available
+    if (typeof firebaseServices !== 'undefined' && 
+        firebaseServices && 
+        firebaseServices.isInitialized() && 
+        typeof firebaseDB !== 'undefined' &&
+        firebaseDB) {
+      return new Promise((resolve) => {
+        firebaseDB.posts.getAll((posts) => {
+          const user = auth.getCurrentUser();
+          let sorted = [...posts];
+          
+          // Sort by followed users first
+          if (user && user.uid) {
+            firebaseDB.follows.getFollowing(user.uid).then(following => {
+              sorted = sorted.sort((a, b) => {
+                const aIsFollowing = following.includes(a.uid);
+                const bIsFollowing = following.includes(b.uid);
+                if (aIsFollowing && !bIsFollowing) return -1;
+                if (!aIsFollowing && bIsFollowing) return 1;
+                return 0;
+              });
+              
+              // Then sort by selected method
+              sorted = sorted.sort((a, b) => {
+                const aIsFollowing = following.includes(a.uid);
+                const bIsFollowing = following.includes(b.uid);
+                if (aIsFollowing && !bIsFollowing) return -1;
+                if (!aIsFollowing && bIsFollowing) return 1;
+                
+                switch (sortBy) {
+                  case 'hot':
+                    const hotScoreA = ((a.likes || 0) * 2 + (a.comments || 0) * 3) / (1 + (Date.now() - (a.createdAt || 0)) / 3600000);
+                    const hotScoreB = ((b.likes || 0) * 2 + (b.comments || 0) * 3) / (1 + (Date.now() - (b.createdAt || 0)) / 3600000);
+                    return hotScoreB - hotScoreA;
+                  case 'top':
+                    return ((b.likes || 0) + (b.comments || 0)) - ((a.likes || 0) + (a.comments || 0));
+                  case 'new':
+                  default:
+                    return (b.createdAt || 0) - (a.createdAt || 0);
+                }
+              });
+              
+              resolve(sorted);
+            });
+          } else {
+            // No user, just sort
+            sorted = sorted.sort((a, b) => {
+              switch (sortBy) {
+                case 'hot':
+                  const hotScoreA = ((a.likes || 0) * 2 + (a.comments || 0) * 3) / (1 + (Date.now() - (a.createdAt || 0)) / 3600000);
+                  const hotScoreB = ((b.likes || 0) * 2 + (b.comments || 0) * 3) / (1 + (Date.now() - (b.createdAt || 0)) / 3600000);
+                  return hotScoreB - hotScoreA;
+                case 'top':
+                  return ((b.likes || 0) + (b.comments || 0)) - ((a.likes || 0) + (a.comments || 0));
+                case 'new':
+                default:
+                  return (b.createdAt || 0) - (a.createdAt || 0);
+              }
+            });
+            resolve(sorted);
+          }
+        });
+      });
+    }
+    
+    // Fallback to localStorage
     const posts = store.posts.getAll();
     const user = auth.getCurrentUser();
     
@@ -57,12 +123,30 @@ const api = {
       throw new Error('Not authenticated');
     }
 
+    // Use Firebase if available
+    if (typeof firebaseServices !== 'undefined' && 
+        firebaseServices && 
+        firebaseServices.isInitialized() && 
+        typeof firebaseDB !== 'undefined' &&
+        firebaseDB) {
+      const post = {
+        content: sanitize(content),
+        tags: tags.length > 0 ? tags : extractTags(content),
+        image: images,
+        video,
+        likes: 0,
+        comments: 0
+      };
+      return await firebaseDB.posts.add(post);
+    }
+
+    // Fallback to localStorage
     const post = {
       id: Date.now().toString(),
       username: user.username,
       content: sanitize(content),
       tags: tags.length > 0 ? tags : extractTags(content),
-      image: images, // Can be array of URLs or single URL
+      image: images,
       video,
       likes: 0,
       comments: 0,
@@ -76,6 +160,16 @@ const api = {
   },
 
   likePost: async (postId) => {
+    // Use Firebase if available
+    if (typeof firebaseServices !== 'undefined' && 
+        firebaseServices && 
+        firebaseServices.isInitialized() && 
+        typeof firebaseDB !== 'undefined' &&
+        firebaseDB) {
+      return await firebaseDB.posts.like(postId);
+    }
+    
+    // Fallback to localStorage
     const post = store.posts.getAll().find(p => p.id === postId);
     if (post) {
       post.likes = (post.likes || 0) + 1;
@@ -85,8 +179,22 @@ const api = {
     return post;
   },
 
-  // Comments
+  // Comments - Uses Firebase Realtime Database
   getComments: async (postId) => {
+    // Use Firebase if available
+    if (typeof firebaseServices !== 'undefined' && 
+        firebaseServices && 
+        firebaseServices.isInitialized() && 
+        typeof firebaseDB !== 'undefined' &&
+        firebaseDB) {
+      return new Promise((resolve) => {
+        firebaseDB.comments.getByPost(postId, (comments) => {
+          resolve(comments);
+        });
+      });
+    }
+    
+    // Fallback to localStorage
     const comments = store.comments.getAll();
     const postComments = comments.filter(c => c.postId === postId);
     await new Promise(resolve => setTimeout(resolve, CONFIG.API_DELAY));
@@ -99,6 +207,21 @@ const api = {
       throw new Error('Not authenticated');
     }
 
+    // Use Firebase if available
+    if (typeof firebaseServices !== 'undefined' && 
+        firebaseServices && 
+        firebaseServices.isInitialized() && 
+        typeof firebaseDB !== 'undefined' &&
+        firebaseDB) {
+      const comment = {
+        postId,
+        content: sanitize(content),
+        guided
+      };
+      return await firebaseDB.comments.add(comment);
+    }
+
+    // Fallback to localStorage
     const comment = {
       id: Date.now().toString(),
       postId,
@@ -110,14 +233,12 @@ const api = {
 
     store.comments.add(comment);
     
-    // Update post comment count
     const post = store.posts.getAll().find(p => p.id === postId);
     if (post) {
       post.comments = (post.comments || 0) + 1;
       store.posts.update(postId, { comments: post.comments });
     }
 
-    // If guided and user is Pro, award profile score
     if (guided && user.username) {
       const profile = store.profiles.get(user.username);
       const level = getLevel(profile.profileScore || 0);
@@ -131,30 +252,36 @@ const api = {
     return comment;
   },
 
-  // Image upload (mock) - NO SIZE LIMITS - Uses IndexedDB
+  // Image upload - Uses Firebase Storage
   uploadImage: async (file) => {
-    // Validate file type only (MIME check)
     if (!file.type.startsWith('image/')) {
       throw new Error('Invalid file type. Please upload an image.');
     }
 
+    // Use Firebase Storage if available
+    if (typeof firebaseServices !== 'undefined' && 
+        firebaseServices && 
+        firebaseServices.isInitialized() && 
+        typeof firebaseStorage !== 'undefined' &&
+        firebaseStorage) {
+      return await firebaseStorage.uploadImage(file);
+    }
+
+    // Fallback to IndexedDB
     await new Promise(resolve => setTimeout(resolve, CONFIG.API_DELAY));
-    
-    // Store in IndexedDB to bypass localStorage size limits
     const mediaId = `image_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     try {
       await mediaDB.saveMedia(mediaId, file);
       return {
         id: mediaId,
-        url: mediaId, // Use ID as reference
+        url: mediaId,
         filename: file.name,
         size: file.size,
         type: file.type
       };
     } catch (error) {
       console.error('IndexedDB storage failed, using object URL:', error);
-      // Fallback: return object URL (won't persist but works for current session)
       const objectURL = URL.createObjectURL(file);
       return {
         url: objectURL,
@@ -166,30 +293,36 @@ const api = {
     }
   },
 
-  // Video upload (mock) - NO SIZE LIMITS - Uses IndexedDB
+  // Video upload - Uses Firebase Storage
   uploadVideo: async (file) => {
-    // Validate file type only (MIME check)
     if (!file.type.startsWith('video/')) {
       throw new Error('Invalid file type. Please upload a video.');
     }
 
+    // Use Firebase Storage if available
+    if (typeof firebaseServices !== 'undefined' && 
+        firebaseServices && 
+        firebaseServices.isInitialized() && 
+        typeof firebaseStorage !== 'undefined' &&
+        firebaseStorage) {
+      return await firebaseStorage.uploadVideo(file);
+    }
+
+    // Fallback to IndexedDB
     await new Promise(resolve => setTimeout(resolve, CONFIG.API_DELAY));
-    
-    // Store in IndexedDB to bypass localStorage size limits
     const mediaId = `video_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     try {
       await mediaDB.saveMedia(mediaId, file);
       return {
         id: mediaId,
-        url: mediaId, // Use ID as reference
+        url: mediaId,
         filename: file.name,
         size: file.size,
         type: file.type
       };
     } catch (error) {
       console.error('IndexedDB storage failed:', error);
-      // Fallback: return object URL (won't persist but works for current session)
       const objectURL = URL.createObjectURL(file);
       return {
         url: objectURL,
@@ -208,12 +341,26 @@ const api = {
       throw new Error('Not authenticated');
     }
 
+    // Use Firebase if available
+    if (typeof firebaseServices !== 'undefined' && 
+        firebaseServices && 
+        firebaseServices.isInitialized() && 
+        typeof firebaseDB !== 'undefined' &&
+        firebaseDB) {
+      const updated = { ...updates };
+      if (updated.content) {
+        updated.content = sanitize(updated.content);
+        updated.tags = updated.tags || extractTags(updated.content);
+      }
+      return await firebaseDB.posts.update(postId, updated);
+    }
+
+    // Fallback to localStorage
     const post = store.posts.getAll().find(p => p.id === postId);
     if (!post) {
       throw new Error('Post not found');
     }
 
-    // Only allow owner to edit
     if (post.username !== user.username) {
       throw new Error('Not authorized to edit this post');
     }
@@ -240,19 +387,26 @@ const api = {
       throw new Error('Not authenticated');
     }
 
+    // Use Firebase if available
+    if (typeof firebaseServices !== 'undefined' && 
+        firebaseServices && 
+        firebaseServices.isInitialized() && 
+        typeof firebaseDB !== 'undefined' &&
+        firebaseDB) {
+      return await firebaseDB.posts.remove(postId);
+    }
+
+    // Fallback to localStorage
     const post = store.posts.getAll().find(p => p.id === postId);
     if (!post) {
       throw new Error('Post not found');
     }
 
-    // Only allow owner to delete
     if (post.username !== user.username) {
       throw new Error('Not authorized to delete this post');
     }
 
-    // Delete associated comments
     const comments = store.comments.getAll();
-    const postComments = comments.filter(c => c.postId === postId);
     const remainingComments = comments.filter(c => c.postId !== postId);
     store.comments.save(remainingComments);
 
