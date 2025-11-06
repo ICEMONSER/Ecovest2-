@@ -1,0 +1,138 @@
+<!--
+How to run (just open index.html via Live Server)
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EcoVest+ - Trading Community</title>
+  <link rel="stylesheet" href="./styles/base.css">
+  <link rel="stylesheet" href="./styles/layout.css">
+  <link rel="stylesheet" href="./styles/components.css">
+  <link rel="stylesheet" href="./styles/pages.css">
+</head>
+<body>
+  <nav>
+    <div class="container">
+      <!-- Navigation will be mounted by ui.js -->
+    </div>
+  </nav>
+
+  <main>
+    <section class="hero">
+      <div class="container">
+        <h1>Welcome to EcoVest+</h1>
+        <p>Join a community of traders and investors. Learn, share, and grow together.</p>
+        <div class="hero-actions">
+          <button class="btn btn-primary" id="signUpHeroBtn">Get Started</button>
+          <button class="btn btn-outline" id="signInHeroBtn">Sign In</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="container">
+      <section class="features">
+        <div class="feature-card">
+          <div class="feature-icon">📊</div>
+          <h3>Learn Trading</h3>
+          <p>Test your knowledge with our trading mini-game. Level up from Beginner to Pro!</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">💬</div>
+          <h3>Community Feed</h3>
+          <p>Share insights, ask questions, and connect with fellow traders in our active community.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🏆</div>
+          <h3>Track Progress</h3>
+          <p>Build your profile, earn achievements, and showcase your trading expertise.</p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Sign In Modal -->
+  <div class="modal" id="signInModal" role="dialog" aria-labelledby="signInModalTitle" aria-hidden="true">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="signInModalTitle">Sign In</h2>
+        <button class="modal-close" aria-label="Close modal">×</button>
+      </div>
+      <form id="signInForm">
+        <div class="form-group">
+          <label for="signInEmail" class="form-label">Email</label>
+          <input type="email" id="signInEmail" class="form-input" required autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label for="signInPassword" class="form-label">Password</label>
+          <input type="password" id="signInPassword" class="form-input" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Sign Up Modal -->
+  <div class="modal" id="signUpModal" role="dialog" aria-labelledby="signUpModalTitle" aria-hidden="true">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="signUpModalTitle">Sign Up</h2>
+        <button class="modal-close" aria-label="Close modal">×</button>
+      </div>
+      <form id="signUpForm">
+        <div class="form-group">
+          <label for="signUpUsername" class="form-label">Username</label>
+          <input type="text" id="signUpUsername" class="form-input" required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label for="signUpEmail" class="form-label">Email</label>
+          <input type="email" id="signUpEmail" class="form-input" required autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label for="signUpPassword" class="form-label">Password</label>
+          <input type="password" id="signUpPassword" class="form-input" required autocomplete="new-password" minlength="6">
+        </div>
+        <div class="form-group">
+          <label for="signUpConfirmPassword" class="form-label">Confirm Password</label>
+          <input type="password" id="signUpConfirmPassword" class="form-input" required autocomplete="new-password">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Sign Up</button>
+      </form>
+    </div>
+  </div>
+
+  <footer>
+    <div class="container">
+      <p>&copy; 2024 EcoVest+. All rights reserved.</p>
+      <p><a href="terms.html">Terms of Service</a></p>
+    </div>
+  </footer>
+
+  <script src="./scripts/config.js"></script>
+  <script src="./scripts/utils.js"></script>
+  <script src="./scripts/indexedDB.js"></script>
+  <script src="./scripts/store.js"></script>
+  <script src="./scripts/ui.js"></script>
+  <script src="./scripts/auth.js"></script>
+  <script src="./scripts/index.js"></script>
+
+  <script>
+    // Initialize UI
+    document.addEventListener('DOMContentLoaded', () => {
+      ui.mountNav();
+      
+      // Hero buttons
+      $('#signUpHeroBtn')?.addEventListener('click', () => ui.openModal('signUpModal'));
+      $('#signInHeroBtn')?.addEventListener('click', () => ui.openModal('signInModal'));
+      
+      // Initialize home page
+      home.init();
+      
+      // Initialize sample data
+      store.initSampleData();
+    });
+  </script>
+</body>
+</html>
+

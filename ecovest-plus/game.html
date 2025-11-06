@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trading Game - EcoVest+</title>
+  <link rel="stylesheet" href="./styles/base.css">
+  <link rel="stylesheet" href="./styles/layout.css">
+  <link rel="stylesheet" href="./styles/components.css">
+  <link rel="stylesheet" href="./styles/pages.css">
+</head>
+<body>
+  <nav>
+    <div class="container">
+      <!-- Navigation will be mounted by ui.js -->
+    </div>
+  </nav>
+
+  <main>
+    <div class="container">
+      <div class="game-container">
+        <h1>Trading Knowledge Game</h1>
+        <div id="gameContainer">
+          <!-- Game content will be loaded here -->
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>&copy; 2024 EcoVest+. All rights reserved.</p>
+      <p><a href="terms.html">Terms of Service</a></p>
+    </div>
+  </footer>
+
+  <script src="./scripts/config.js"></script>
+  <script src="./scripts/utils.js"></script>
+  <script src="./scripts/indexedDB.js"></script>
+  <script src="./scripts/store.js"></script>
+  <script src="./scripts/ui.js"></script>
+  <script src="./scripts/auth.js"></script>
+  <script src="./scripts/api.js"></script>
+  <script src="./scripts/game.js"></script>
+
+  <script>
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      ui.mountNav();
+      game.init();
+    });
+  </script>
+</body>
+</html>
+
