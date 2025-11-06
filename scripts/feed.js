@@ -3,6 +3,7 @@
 const feed = {
   currentSort: 'new',
   currentSearch: '',
+  postsUnsubscribe: null, // For Firebase real-time listener cleanup
 
   // Initialize feed
   init: async () => {
@@ -121,11 +122,106 @@ const feed = {
     });
   },
 
-  // Load posts
+  // Load posts - Uses Firebase real-time listeners if available
   loadPosts: async () => {
     const container = $('#postsContainer');
     if (!container) return;
 
+    // Use Firebase real-time listener if available
+    if (typeof firebaseServices !== 'undefined' && 
+        firebaseServices && 
+        firebaseServices.isInitialized() && 
+        typeof firebaseDB !== 'undefined' &&
+        firebaseDB) {
+      
+      // Clean up previous listener
+      if (feed.postsUnsubscribe) {
+        feed.postsUnsubscribe();
+        feed.postsUnsubscribe = null;
+      }
+      
+      ui.showLoading(container);
+      
+      // Set up real-time listener
+      feed.postsUnsubscribe = firebaseDB.posts.getAll((posts) => {
+        // Filter by search if needed
+        let filteredPosts = posts;
+        if (feed.currentSearch) {
+          const lowerQuery = feed.currentSearch.toLowerCase();
+          filteredPosts = posts.filter(post => {
+            const contentMatch = (post.content || '').toLowerCase().includes(lowerQuery);
+            const tagMatch = (post.tags || []).some(tag => tag.toLowerCase().includes(lowerQuery));
+            const usernameMatch = (post.username || '').toLowerCase().includes(lowerQuery);
+            return contentMatch || tagMatch || usernameMatch;
+          });
+        }
+        
+        // Sort posts
+        const user = auth.getCurrentUser();
+        if (user && user.uid) {
+          firebaseDB.follows.getFollowing(user.uid).then(following => {
+            let sorted = [...filteredPosts];
+            sorted = sorted.sort((a, b) => {
+              const aIsFollowing = following.includes(a.uid);
+              const bIsFollowing = following.includes(b.uid);
+              if (aIsFollowing && !bIsFollowing) return -1;
+              if (!aIsFollowing && bIsFollowing) return 1;
+              
+              switch (feed.currentSort) {
+                case 'hot':
+                  const hotScoreA = ((a.likes || 0) * 2 + (a.comments || 0) * 3) / (1 + (Date.now() - (a.createdAt || 0)) / 3600000);
+                  const hotScoreB = ((b.likes || 0) * 2 + (b.comments || 0) * 3) / (1 + (Date.now() - (b.createdAt || 0)) / 3600000);
+                  return hotScoreB - hotScoreA;
+                case 'top':
+                  return ((b.likes || 0) + (b.comments || 0)) - ((a.likes || 0) + (a.comments || 0));
+                case 'new':
+                default:
+                  return (b.createdAt || 0) - (a.createdAt || 0);
+              }
+            });
+            feed.renderPosts(sorted);
+          }).catch(() => {
+            // If follows fetch fails, just sort without following priority
+            let sorted = [...filteredPosts];
+            sorted = sorted.sort((a, b) => {
+              switch (feed.currentSort) {
+                case 'hot':
+                  const hotScoreA = ((a.likes || 0) * 2 + (a.comments || 0) * 3) / (1 + (Date.now() - (a.createdAt || 0)) / 3600000);
+                  const hotScoreB = ((b.likes || 0) * 2 + (b.comments || 0) * 3) / (1 + (Date.now() - (b.createdAt || 0)) / 3600000);
+                  return hotScoreB - hotScoreA;
+                case 'top':
+                  return ((b.likes || 0) + (b.comments || 0)) - ((a.likes || 0) + (a.comments || 0));
+                case 'new':
+                default:
+                  return (b.createdAt || 0) - (a.createdAt || 0);
+              }
+            });
+            feed.renderPosts(sorted);
+          });
+        } else {
+          // No user, just sort
+          let sorted = [...filteredPosts];
+          sorted = sorted.sort((a, b) => {
+            switch (feed.currentSort) {
+              case 'hot':
+                const hotScoreA = ((a.likes || 0) * 2 + (a.comments || 0) * 3) / (1 + (Date.now() - (a.createdAt || 0)) / 3600000);
+                const hotScoreB = ((b.likes || 0) * 2 + (b.comments || 0) * 3) / (1 + (Date.now() - (b.createdAt || 0)) / 3600000);
+                return hotScoreB - hotScoreA;
+              case 'top':
+                return ((b.likes || 0) + (b.comments || 0)) - ((a.likes || 0) + (a.comments || 0));
+              case 'new':
+              default:
+                return (b.createdAt || 0) - (a.createdAt || 0);
+            }
+          });
+          feed.renderPosts(sorted);
+        }
+      });
+      
+      return; // Real-time listener is set up
+    }
+
+    // Fallback to regular API call (localStorage)
     ui.showLoading(container);
 
     try {
