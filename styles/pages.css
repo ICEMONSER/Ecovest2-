@@ -253,15 +253,7 @@
   justify-content: center;
 }
 
-.dev-delete-btn {
-  border-color: var(--error) !important;
-  color: var(--error) !important;
-}
 
-.dev-delete-btn:hover {
-  background: var(--error) !important;
-  color: white !important;
-}
 
 .post-author {
   display: flex;

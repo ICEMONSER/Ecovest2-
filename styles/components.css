@@ -213,6 +213,13 @@
   margin-top: var(--spacing-xs);
 }
 
+.form-hint {
+  display: block;
+  color: var(--gray-600);
+  font-size: var(--font-size-sm);
+  margin-top: var(--spacing-xs);
+}
+
 /* Toast notifications */
 .toast {
   position: fixed;

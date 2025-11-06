@@ -48,6 +48,9 @@ const profilePage = {
           ${isFollowing ? '✓ Following' : '+ Follow'}
         </button>
       ` : '';
+      const deleteButton = isOwnProfile ? `
+        <button class="btn btn-outline" id="deleteAccountBtn" title="Delete Account">Delete Account</button>
+      ` : '';
 
       header.innerHTML = `
         <div class="profile-avatar">
@@ -64,6 +67,7 @@ const profilePage = {
             <span class="stat-item"><strong>${following}</strong> Following</span>
           </div>
           ${followButton}
+          ${deleteButton}
         </div>
       `;
 
@@ -71,6 +75,27 @@ const profilePage = {
       if (!isOwnProfile && session) {
         $('#profileFollowBtn')?.addEventListener('click', () => {
           profilePage.handleFollow(username);
+        });
+      }
+      if (isOwnProfile) {
+        $('#deleteAccountBtn')?.addEventListener('click', () => ui.openModal('deleteAccountModal'));
+        const form = $('#deleteAccountForm');
+        form?.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const text = $('#deleteConfirmText').value.trim();
+          const btn = form.querySelector('button[type="submit"]');
+          btn.disabled = true;
+          btn.textContent = 'Deleting...';
+          const res = await auth.deleteAccount(text);
+          btn.disabled = false;
+          btn.textContent = 'Delete Account';
+          if (!res.success) {
+            ui.toast(res.error || 'Failed to delete account', 'error');
+            return;
+          }
+          ui.toast('Account deleted. Goodbye!', 'success');
+          ui.closeModal('deleteAccountModal');
+          window.location.href = './index.html';
         });
       }
     }

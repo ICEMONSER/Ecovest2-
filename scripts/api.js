@@ -213,9 +213,8 @@ const api = {
       throw new Error('Post not found');
     }
 
-    // Only allow owner or dev mode to edit
-    const isDevMode = store.devMode.isActive();
-    if (post.username !== user.username && !isDevMode) {
+    // Only allow owner to edit
+    if (post.username !== user.username) {
       throw new Error('Not authorized to edit this post');
     }
 
@@ -246,9 +245,8 @@ const api = {
       throw new Error('Post not found');
     }
 
-    // Only allow owner or dev mode to delete
-    const isDevMode = store.devMode.isActive();
-    if (post.username !== user.username && !isDevMode) {
+    // Only allow owner to delete
+    if (post.username !== user.username) {
       throw new Error('Not authorized to delete this post');
     }
 
@@ -279,4 +277,5 @@ const api = {
     return filtered;
   }
 };
+
 

@@ -7,7 +7,8 @@ const CONFIG = {
     GAME_HISTORY: 'ev.gameHistory',
     USER_PROFILES: 'ev.userProfiles',
     USER_ACCOUNTS: 'ev.userAccounts',
-    FOLLOWS: 'ev.follows'
+    FOLLOWS: 'ev.follows',
+    PASSWORD_RESETS: 'ev.passwordResets'
   },
   LEVELS: {
     BEGINNER: { min: 20, max: 100 },
@@ -29,10 +30,11 @@ const CONFIG = {
     MAX_SIZE: 20 * 1024 * 1024, // 20MB
     ALLOWED_TYPES: ['video/mp4', 'video/webm', 'video/quicktime']
   },
-  DEV_MODE: {
-    CODE: 'icemonster',
-    STORAGE_KEY: 'ev.devMode'
-  },
-  API_DELAY: 300 // mock API delay in ms
+  API_DELAY: 300, // mock API delay in ms
+  EMAILJS: {
+    SERVICE_ID: 'service_qttkvw8', // Replace with your EmailJS service ID
+    TEMPLATE_ID: 'template_332l4o3', // Replace with your EmailJS template ID
+    PUBLIC_KEY: 'hYqF4YXmZYqyx-kB-' // Replace with your EmailJS public key
+  }
 };
 

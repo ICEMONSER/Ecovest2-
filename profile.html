@@ -35,6 +35,23 @@
     </div>
   </main>
 
+  <!-- Delete Account Modal -->
+  <div class="modal" id="deleteAccountModal" role="dialog" aria-labelledby="deleteAccountTitle" aria-hidden="true">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="deleteAccountTitle">Delete Account</h2>
+        <button class="modal-close" aria-label="Close modal">×</button>
+      </div>
+      <form id="deleteAccountForm">
+        <p>This action is permanent. Type <strong>DELETE MY ACCOUNT</strong> to confirm.</p>
+        <div class="form-group">
+          <input type="text" id="deleteConfirmText" class="form-input" placeholder="DELETE MY ACCOUNT" required>
+        </div>
+        <button type="submit" class="btn btn-outline btn-block">Delete Account</button>
+      </form>
+    </div>
+  </div>
+
   <footer>
     <div class="container">
       <p>&copy; 2024 EcoVest+. All rights reserved.</p>

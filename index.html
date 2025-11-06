@@ -68,6 +68,9 @@ How to run (just open index.html via Live Server)
           <label for="signInPassword" class="form-label">Password</label>
           <input type="password" id="signInPassword" class="form-input" required autocomplete="current-password">
         </div>
+        <div class="form-group">
+          <button type="button" class="btn btn-outline" id="forgotPasswordBtn">Forgot password?</button>
+        </div>
         <button type="submit" class="btn btn-primary btn-block">Sign In</button>
       </form>
     </div>
@@ -102,6 +105,65 @@ How to run (just open index.html via Live Server)
     </div>
   </div>
 
+  <!-- Forgot Password Modal -->
+  <div class="modal" id="forgotPasswordModal" role="dialog" aria-labelledby="forgotPasswordTitle" aria-hidden="true">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="forgotPasswordTitle">Reset Password</h2>
+        <button class="modal-close" aria-label="Close modal">×</button>
+      </div>
+      <form id="forgotPasswordForm">
+        <div class="form-group">
+          <label for="forgotEmail" class="form-label">Your email</label>
+          <input type="email" id="forgotEmail" class="form-input" required autocomplete="email">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Send OTP to Email</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Verify OTP Modal -->
+  <div class="modal" id="verifyOTPModal" role="dialog" aria-labelledby="verifyOTPTitle" aria-hidden="true">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="verifyOTPTitle">Enter OTP</h2>
+        <button class="modal-close" aria-label="Close modal">×</button>
+      </div>
+      <form id="verifyOTPForm">
+        <input type="hidden" id="otpEmail">
+        <div class="form-group">
+          <label for="otpCode" class="form-label">Enter 6-digit OTP sent to your email</label>
+          <input type="text" id="otpCode" class="form-input" required maxlength="6" pattern="[0-9]{6}" placeholder="000000">
+          <small class="form-hint">Please check your email inbox for the OTP code. It may take a few moments to arrive.</small>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Verify OTP</button>
+        <button type="button" class="btn btn-outline btn-block" id="resendOTPBtn">Resend OTP</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Reset Password Modal -->
+  <div class="modal" id="resetPasswordModal" role="dialog" aria-labelledby="resetPasswordTitle" aria-hidden="true">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="resetPasswordTitle">Set New Password</h2>
+        <button class="modal-close" aria-label="Close modal">×</button>
+      </div>
+      <form id="resetPasswordForm">
+        <input type="hidden" id="resetEmail">
+        <div class="form-group">
+          <label for="newPassword" class="form-label">New password</label>
+          <input type="password" id="newPassword" class="form-input" required minlength="6">
+        </div>
+        <div class="form-group">
+          <label for="confirmNewPassword" class="form-label">Confirm new password</label>
+          <input type="password" id="confirmNewPassword" class="form-input" required minlength="6">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Reset password</button>
+      </form>
+    </div>
+  </div>
+
   <footer>
     <div class="container">
       <p>&copy; 2024 EcoVest+. All rights reserved.</p>
@@ -109,6 +171,9 @@ How to run (just open index.html via Live Server)
     </div>
   </footer>
 
+  <!-- EmailJS SDK -->
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  
   <script src="./scripts/config.js"></script>
   <script src="./scripts/utils.js"></script>
   <script src="./scripts/indexedDB.js"></script>

@@ -185,6 +185,122 @@ const store = {
     }
   },
 
+  // Password reset OTPs
+  passwordResets: {
+    getAll: () => {
+      try {
+        const data = localStorage.getItem(CONFIG.STORAGE_KEYS.PASSWORD_RESETS);
+        return data ? JSON.parse(data) : {};
+      } catch (e) {
+        return {};
+      }
+    },
+    saveAll: (otps) => {
+      localStorage.setItem(CONFIG.STORAGE_KEYS.PASSWORD_RESETS, JSON.stringify(otps));
+    },
+    generateOTP: (email) => {
+      const otps = store.passwordResets.getAll();
+      // Generate 6-digit OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = Date.now() + 1000 * 60 * 10; // 10 minutes
+      const emailLower = email.toLowerCase();
+      
+      // Remove any existing OTP for this email
+      Object.keys(otps).forEach(key => {
+        if (otps[key].email === emailLower) {
+          delete otps[key];
+        }
+      });
+      
+      otps[otp] = { email: emailLower, expiresAt, attempts: 0 };
+      store.passwordResets.saveAll(otps);
+      return { otp, expiresAt };
+    },
+    verifyOTP: (otp, email) => {
+      const otps = store.passwordResets.getAll();
+      const entry = otps[otp];
+      if (!entry) return { valid: false, error: 'Invalid OTP' };
+      
+      if (Date.now() > entry.expiresAt) {
+        delete otps[otp];
+        store.passwordResets.saveAll(otps);
+        return { valid: false, error: 'OTP has expired' };
+      }
+      
+      if (entry.email !== email.toLowerCase()) {
+        entry.attempts = (entry.attempts || 0) + 1;
+        if (entry.attempts >= 5) {
+          delete otps[otp];
+          store.passwordResets.saveAll(otps);
+          return { valid: false, error: 'Too many failed attempts. Please request a new OTP.' };
+        }
+        store.passwordResets.saveAll(otps);
+        return { valid: false, error: 'OTP does not match this email' };
+      }
+      
+      // OTP is valid, consume it
+      delete otps[otp];
+      store.passwordResets.saveAll(otps);
+      return { valid: true, email: entry.email };
+    }
+  },
+
+  // Maintenance helpers
+  maintenance: {
+    updatePasswordByEmail: (email, newPasswordHash) => {
+      const accounts = store.accounts.getAll();
+      const emailLower = email.toLowerCase();
+      if (!accounts[emailLower]) return false;
+      accounts[emailLower].passwordHash = newPasswordHash;
+      localStorage.setItem(CONFIG.STORAGE_KEYS.USER_ACCOUNTS, JSON.stringify(accounts));
+      return true;
+    },
+    removeAccountByEmail: (email) => {
+      try {
+        const accounts = store.accounts.getAll();
+        const emailLower = email.toLowerCase();
+        const username = accounts[emailLower]?.username;
+        if (!username) return false;
+
+        // Remove account
+        delete accounts[emailLower];
+        localStorage.setItem(CONFIG.STORAGE_KEYS.USER_ACCOUNTS, JSON.stringify(accounts));
+
+        // Remove profile
+        const profilesData = localStorage.getItem(CONFIG.STORAGE_KEYS.USER_PROFILES);
+        const profiles = profilesData ? JSON.parse(profilesData) : {};
+        delete profiles[username];
+        localStorage.setItem(CONFIG.STORAGE_KEYS.USER_PROFILES, JSON.stringify(profiles));
+
+        // Remove posts
+        const posts = store.posts.getAll().filter(p => p.username !== username);
+        store.posts.save(posts);
+
+        // Remove comments
+        const comments = store.comments.getAll().filter(c => c.username !== username);
+        store.comments.save(comments);
+
+        // Remove follows
+        const follows = store.follows.getAll();
+        delete follows[username];
+        Object.keys(follows).forEach(user => {
+          follows[user] = (follows[user] || []).filter(u => u !== username);
+        });
+        localStorage.setItem(CONFIG.STORAGE_KEYS.FOLLOWS, JSON.stringify(follows));
+
+        // Remove game history
+        const historyData = localStorage.getItem(CONFIG.STORAGE_KEYS.GAME_HISTORY);
+        const history = historyData ? JSON.parse(historyData) : [];
+        const remaining = history.filter(h => h.username !== username);
+        localStorage.setItem(CONFIG.STORAGE_KEYS.GAME_HISTORY, JSON.stringify(remaining));
+
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+  },
+
   // Follow system
   follows: {
     getAll: () => {
@@ -256,23 +372,6 @@ const store = {
     isFollowing: (follower, followee) => {
       const follows = store.follows.getAll();
       return follows[follower] && follows[follower].includes(followee);
-    }
-  },
-
-  // Dev mode
-  devMode: {
-    isActive: () => {
-      try {
-        return localStorage.getItem(CONFIG.DEV_MODE.STORAGE_KEY) === 'true';
-      } catch (e) {
-        return false;
-      }
-    },
-    activate: () => {
-      localStorage.setItem(CONFIG.DEV_MODE.STORAGE_KEY, 'true');
-    },
-    deactivate: () => {
-      localStorage.removeItem(CONFIG.DEV_MODE.STORAGE_KEY);
     }
   },
 

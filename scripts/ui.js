@@ -7,15 +7,12 @@ const ui = {
     if (!nav) return;
 
     const session = store.session.load();
-    const isDevMode = store.devMode.isActive();
-    const devModeIndicator = isDevMode ? '<span class="dev-mode-indicator" title="Developer Mode Active">⚙️</span>' : '';
     
     if (session) {
       nav.innerHTML = `
         <div class="nav-brand">
           <a href="./index.html" class="home-link">🏠 Home</a>
           <a href="./index.html">EcoVest+</a>
-          ${devModeIndicator}
         </div>
         <div class="nav-menu">
           <div class="user-menu">
@@ -58,7 +55,6 @@ const ui = {
         <div class="nav-brand">
           <a href="./index.html" class="home-link">🏠 Home</a>
           <a href="./index.html">EcoVest+</a>
-          ${devModeIndicator}
         </div>
         <div class="nav-menu">
           <button class="btn btn-outline" id="signInBtn">Sign In</button>
@@ -70,47 +66,8 @@ const ui = {
       $('#signUpBtn')?.addEventListener('click', () => ui.openModal('signUpModal'));
     }
 
-    // Add dev mode indicator styling
-    if (isDevMode) {
-      document.body.classList.add('dev-mode-active');
-    } else {
-      document.body.classList.remove('dev-mode-active');
-    }
   },
-
-  // Initialize dev mode detection
-  initDevMode: () => {
-    let inputBuffer = '';
-    const secretCode = CONFIG.DEV_MODE.CODE;
-
-    document.addEventListener('keydown', (e) => {
-      // Only track if typing in a text input/textarea
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-        inputBuffer += e.key.toLowerCase();
-        
-        // Keep buffer same length as secret code
-        if (inputBuffer.length > secretCode.length) {
-          inputBuffer = inputBuffer.slice(-secretCode.length);
-        }
-
-        // Check if secret code matches
-        if (inputBuffer === secretCode) {
-          store.devMode.activate();
-          ui.toast('Developer mode activated! ⚙️', 'success');
-          ui.mountNav();
-          inputBuffer = '';
-          
-          // Trigger custom event for feed to update
-          window.dispatchEvent(new CustomEvent('devModeChanged'));
-        }
-      }
-    });
-
-    // Check on page load
-    if (store.devMode.isActive()) {
-      document.body.classList.add('dev-mode-active');
-    }
-  },
+  
 
   // Modal controller
   openModal: (modalId) => {
@@ -198,8 +155,5 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
-
-  // Initialize dev mode
-  ui.initDevMode();
 });
 

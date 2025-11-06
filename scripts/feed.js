@@ -29,11 +29,6 @@ const feed = {
     // Set up event listeners
     feed.setupEventListeners();
 
-    // Listen for dev mode changes
-    window.addEventListener('devModeChanged', () => {
-      feed.loadPosts();
-    });
-
     // Load posts
     await feed.loadPosts();
 
@@ -195,7 +190,7 @@ const feed = {
   renderPost: (post) => {
     const session = store.session.load();
     const isOwnPost = session && post.username === session.username;
-    const isDevMode = store.devMode?.isActive ? store.devMode.isActive() : false;
+    
     const isFollowing = session && store.follows.isFollowing(session.username, post.username);
     
     const tags = post.tags.map(tag => `<span class="tag">${sanitize(tag)}</span>`).join('');

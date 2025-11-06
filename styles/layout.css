@@ -48,20 +48,7 @@ nav .container {
   font-weight: 500;
 }
 
-.dev-mode-indicator {
-  color: var(--error);
-  font-size: var(--font-size-lg);
-  animation: pulse 2s infinite;
-}
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-body.dev-mode-active {
-  border-top: 3px solid var(--error);
-}
 
 .nav-menu {
   display: flex;
