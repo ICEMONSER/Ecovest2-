@@ -27,6 +27,30 @@
   justify-content: center;
   flex-wrap: wrap;
 }
+/* Hero button overrides so all three look consistent on the gradient */
+.hero .btn-primary {
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+  border-color: rgba(255, 255, 255, 0.75);
+}
+
+.hero .btn-primary:hover {
+  background: white;
+  color: var(--primary);
+  border-color: white;
+}
+
+.hero .btn-outline {
+  color: white;
+  border-color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.hero .btn-outline:hover {
+  color: var(--primary);
+  background: white;
+  border-color: white;
+}
 
 .features {
   display: grid;
