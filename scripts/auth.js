@@ -209,7 +209,10 @@ const auth = {
         firebaseServices.isInitialized() && 
         typeof firebaseAuth !== 'undefined' &&
         firebaseAuth) {
-      return firebaseAuth.getCurrentUser();
+      const firebaseUser = firebaseAuth.getCurrentUser();
+      if (firebaseUser) {
+        return firebaseUser;
+      }
     }
     return store.session.load();
   },

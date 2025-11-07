@@ -129,9 +129,12 @@ const store = {
       try {
         const data = localStorage.getItem(CONFIG.STORAGE_KEYS.USER_PROFILES);
         const profiles = data ? JSON.parse(data) : {};
-        return profiles[username] || { username, profileScore: 0, level: 'Novice', followers: 0, following: 0 };
+        if (!profiles[username]) {
+          return { username, profileScore: 0, level: 'Novice', followers: 0, following: 0, avatarUrl: null };
+        }
+        return { avatarUrl: null, ...profiles[username] };
       } catch (e) {
-        return { username, profileScore: 0, level: 'Novice', followers: 0, following: 0 };
+        return { username, profileScore: 0, level: 'Novice', followers: 0, following: 0, avatarUrl: null };
       }
     },
     update: (username, updates) => {
@@ -139,7 +142,7 @@ const store = {
         const data = localStorage.getItem(CONFIG.STORAGE_KEYS.USER_PROFILES);
         const profiles = data ? JSON.parse(data) : {};
         if (!profiles[username]) {
-          profiles[username] = { username, profileScore: 0, level: 'Novice', followers: 0, following: 0 };
+          profiles[username] = { username, profileScore: 0, level: 'Novice', followers: 0, following: 0, avatarUrl: null };
         }
         profiles[username] = { ...profiles[username], ...updates };
         localStorage.setItem(CONFIG.STORAGE_KEYS.USER_PROFILES, JSON.stringify(profiles));

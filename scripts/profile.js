@@ -40,6 +40,15 @@ const profilePage = {
     const followers = profile.followers || 0;
     const following = profile.following || 0;
 
+    const avatarMarkup = getAvatarPlaceholder(username);
+    const avatarControls = isOwnProfile ? `
+      <div class="avatar-upload">
+        <button class="btn btn-outline btn-sm" id="changeAvatarBtn" type="button">Change Photo</button>
+        <input type="file" id="avatarFileInput" accept="image/*" hidden>
+        <p class="avatar-hint">PNG or JPG (any size)</p>
+      </div>
+    ` : '';
+
     // Render profile header
     const header = $('#profileHeader');
     if (header) {
@@ -54,7 +63,8 @@ const profilePage = {
 
       header.innerHTML = `
         <div class="profile-avatar">
-          ${getAvatarPlaceholder(username)}
+          ${avatarMarkup}
+          ${avatarControls}
         </div>
         <div class="profile-info">
           <h1 class="profile-username">${sanitize(username)}</h1>
@@ -78,6 +88,14 @@ const profilePage = {
         });
       }
       if (isOwnProfile) {
+        const changeBtn = $('#changeAvatarBtn');
+        const fileInput = $('#avatarFileInput');
+        changeBtn?.addEventListener('click', () => fileInput?.click());
+        fileInput?.addEventListener('change', (event) => {
+          const file = event.target.files?.[0];
+          if (!file) return;
+          profilePage.handleAvatarUpload({ file, button: changeBtn, input: fileInput });
+        });
         $('#deleteAccountBtn')?.addEventListener('click', () => ui.openModal('deleteAccountModal'));
         const form = $('#deleteAccountForm');
         form?.addEventListener('submit', async (e) => {
@@ -388,6 +406,76 @@ const profilePage = {
         }).join('')}
       </div>
     `;
+  },
+
+  // Handle avatar upload
+  handleAvatarUpload: async ({ file, button, input }) => {
+    if (!file) return;
+
+    const session = store.session.load();
+    if (!session) {
+      ui.toast('Please log in to change your avatar.', 'error');
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      ui.toast('Please choose an image file (PNG or JPG).', 'error');
+      if (input) input.value = '';
+      return;
+    }
+
+    if (button) {
+      button.disabled = true;
+      button.textContent = 'Uploading...';
+    }
+
+    try {
+      let avatarUrl = '';
+      const hasFirebase = typeof firebaseServices !== 'undefined' && firebaseServices?.isInitialized?.();
+      const firebaseUser = (typeof firebaseAuth !== 'undefined' && typeof firebaseAuth.getCurrentUser === 'function') ? firebaseAuth.getCurrentUser() : null;
+      const canUseFirebaseStorage = hasFirebase && firebaseUser && typeof firebaseStorage !== 'undefined' && typeof firebaseStorage.uploadImage === 'function';
+
+      if (canUseFirebaseStorage) {
+        const uploadResult = await firebaseStorage.uploadImage(file);
+        avatarUrl = uploadResult?.url || '';
+      } else {
+        avatarUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(reader.error || new Error('Failed to read image'));
+          reader.readAsDataURL(file);
+        });
+      }
+
+      if (!avatarUrl) {
+        throw new Error('Upload did not return an image URL.');
+      }
+
+      store.profiles.update(session.username, { avatarUrl });
+
+      if (hasFirebase && firebaseUser?.uid && typeof firebaseDB !== 'undefined' && firebaseDB?.profiles?.update) {
+        try {
+          await firebaseDB.profiles.update(firebaseUser.uid, { avatarUrl });
+        } catch (error) {
+          console.warn('Failed to sync avatar with Firebase profile:', error);
+        }
+      }
+
+      ui.toast('Profile photo updated!', 'success');
+      ui.mountNav();
+      profilePage.loadProfile(session.username);
+    } catch (error) {
+      console.error('Avatar upload error:', error);
+      ui.toast(error?.message || 'Failed to upload avatar', 'error');
+    } finally {
+      if (button) {
+        button.disabled = false;
+        button.textContent = 'Change Photo';
+      }
+      if (input) {
+        input.value = '';
+      }
+    }
   },
 
   // Handle follow

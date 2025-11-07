@@ -268,6 +268,17 @@
   flex-shrink: 0;
 }
 
+.avatar-image {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  display: block;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  background: var(--gray-100);
+}
+
 /* Level badges */
 .level-badge {
   display: inline-block;

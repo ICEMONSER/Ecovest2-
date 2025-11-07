@@ -1,9 +1,25 @@
-x// Firebase Storage Service for Media Files
+// Firebase Storage Service for Media Files
+
+if (typeof firebaseServices === 'undefined') {
+  var firebaseServices = (typeof window !== 'undefined' && window.firebaseServices)
+    ? window.firebaseServices
+    : {
+        app: null,
+        auth: null,
+        database: null,
+        storage: null,
+        isInitialized: () => false
+      };
+  if (typeof window !== 'undefined') {
+    window.firebaseServices = firebaseServices;
+  }
+}
 
 const firebaseStorage = {
   // Upload image
   uploadImage: async (file) => {
-    if (!firebaseServices.isInitialized()) {
+    const services = typeof firebaseServices !== 'undefined' ? firebaseServices : null;
+    if (!services || typeof services.isInitialized !== 'function' || !services.isInitialized()) {
       throw new Error('Firebase not initialized');
     }
 
@@ -24,7 +40,7 @@ const firebaseStorage = {
       const fileName = `images/${user.uid}/${timestamp}_${randomId}.${fileExtension}`;
 
       // Upload to Firebase Storage
-      const storageRef = firebaseServices.storage.ref(fileName);
+      const storageRef = services.storage.ref(fileName);
       const uploadTask = storageRef.put(file);
 
       // Wait for upload to complete
@@ -59,7 +75,8 @@ const firebaseStorage = {
 
   // Upload video
   uploadVideo: async (file) => {
-    if (!firebaseServices.isInitialized()) {
+    const services = typeof firebaseServices !== 'undefined' ? firebaseServices : null;
+    if (!services || typeof services.isInitialized !== 'function' || !services.isInitialized()) {
       throw new Error('Firebase not initialized');
     }
 
@@ -80,7 +97,7 @@ const firebaseStorage = {
       const fileName = `videos/${user.uid}/${timestamp}_${randomId}.${fileExtension}`;
 
       // Upload to Firebase Storage with resumable upload
-      const storageRef = firebaseServices.storage.ref(fileName);
+      const storageRef = services.storage.ref(fileName);
       const uploadTask = storageRef.put(file);
 
       // Wait for upload to complete
@@ -118,12 +135,13 @@ const firebaseStorage = {
 
   // Delete media file
   delete: async (filePath) => {
-    if (!firebaseServices.isInitialized()) {
+    const services = typeof firebaseServices !== 'undefined' ? firebaseServices : null;
+    if (!services || typeof services.isInitialized !== 'function' || !services.isInitialized()) {
       throw new Error('Firebase not initialized');
     }
 
     try {
-      const storageRef = firebaseServices.storage.ref(filePath);
+      const storageRef = services.storage.ref(filePath);
       await storageRef.delete();
       return true;
     } catch (error) {

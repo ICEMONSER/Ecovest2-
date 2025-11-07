@@ -127,12 +127,15 @@ const feed = {
     const container = $('#postsContainer');
     if (!container) return;
 
+    const authUser = auth.getCurrentUser();
+    const useFirebase = typeof firebaseServices !== 'undefined' &&
+      firebaseServices &&
+      firebaseServices.isInitialized && firebaseServices.isInitialized() &&
+      typeof firebaseDB !== 'undefined' && firebaseDB &&
+      authUser && authUser.uid;
+ 
     // Use Firebase real-time listener if available
-    if (typeof firebaseServices !== 'undefined' && 
-        firebaseServices && 
-        firebaseServices.isInitialized() && 
-        typeof firebaseDB !== 'undefined' &&
-        firebaseDB) {
+    if (useFirebase) {
       
       // Clean up previous listener
       if (feed.postsUnsubscribe) {
@@ -157,9 +160,8 @@ const feed = {
         }
         
         // Sort posts
-        const user = auth.getCurrentUser();
-        if (user && user.uid) {
-          firebaseDB.follows.getFollowing(user.uid).then(following => {
+        if (authUser && authUser.uid) {
+          firebaseDB.follows.getFollowing(authUser.uid).then(following => {
             let sorted = [...filteredPosts];
             sorted = sorted.sort((a, b) => {
               const aIsFollowing = following.includes(a.uid);

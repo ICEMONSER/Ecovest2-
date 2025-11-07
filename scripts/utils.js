@@ -92,6 +92,16 @@ const sanitize = (str) => {
   return div.innerHTML;
 };
 
+const sanitizeUrl = (url) => {
+  if (!url) return '';
+  try {
+    const parsed = new URL(url, window.location.origin);
+    return parsed.href;
+  } catch (error) {
+    return '';
+  }
+};
+
 // Extract tags from text
 const extractTags = (text) => {
   const tagRegex = /#(\w+)/g;
@@ -119,6 +129,23 @@ const getLevelBadgeColor = (level) => {
 
 // Generate avatar placeholder
 const getAvatarPlaceholder = (username) => {
+  let avatarUrl = null;
+  try {
+    if (typeof store !== 'undefined' && store?.profiles?.get) {
+      const profile = store.profiles.get(username);
+      avatarUrl = profile?.avatarUrl || null;
+    }
+  } catch (error) {
+    avatarUrl = null;
+  }
+
+  if (avatarUrl) {
+    const safeUrl = sanitizeUrl(avatarUrl);
+    if (safeUrl) {
+      return `<img class="avatar-image" src="${safeUrl}" alt="${sanitize(username)}'s avatar">`;
+    }
+  }
+
   const initial = username.charAt(0).toUpperCase();
   return `<div class="avatar-placeholder" style="background-color: ${getLevelBadgeColor(getLevel(0))}">${initial}</div>`;
 };
