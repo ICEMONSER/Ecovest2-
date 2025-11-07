@@ -1,5 +1,17 @@
 // Profile page module
 
+const ROLE_DEFINITIONS = {
+  investor: { label: 'Invest Smart', icon: '💼' },
+  entrepreneur: { label: 'Build Ventures', icon: '🚀' },
+  'business-owner': { label: 'Scale Businesses', icon: '🏢' },
+  student: { label: 'Learn & Explore', icon: '📚' },
+  advisor: { label: 'Guide Others', icon: '🧭' },
+  'community-builder': { label: 'Connect & Collaborate', icon: '🤝' },
+  'challenge-participant': { label: 'Join Challenges', icon: '🏆' },
+  'content-creator': { label: 'Create Content', icon: '🎥' },
+  other: { label: 'Community Member', icon: '✨' }
+};
+
 const profilePage = {
   currentTab: 'posts',
 
@@ -39,6 +51,7 @@ const profilePage = {
     const isFollowing = session && !isOwnProfile && store.follows.isFollowing(session.username, username);
     const followers = profile.followers || 0;
     const following = profile.following || 0;
+    const roles = Array.isArray(profile.roles) ? profile.roles : (profile.role ? [profile.role] : []);
 
     const avatarMarkup = getAvatarPlaceholder(username);
     const avatarControls = isOwnProfile ? `
@@ -68,6 +81,14 @@ const profilePage = {
         </div>
         <div class="profile-info">
           <h1 class="profile-username">${sanitize(username)}</h1>
+          <div class="profile-roles">
+            ${roles.length > 0
+              ? roles.map(roleKey => {
+                  const roleMeta = ROLE_DEFINITIONS[roleKey] || { label: roleKey, icon: '✨' };
+                  return `<span class="profile-role-badge"><span class="profile-role-icon">${roleMeta.icon}</span>${sanitize(roleMeta.label)}</span>`;
+                }).join('')
+              : '<span class="profile-role-badge"><span class="profile-role-icon">✨</span>Member</span>'}
+          </div>
           <div class="profile-badges">
             <span class="level-badge level-${level.toLowerCase()}">${level}</span>
             <span class="score-badge">Score: ${profile.profileScore || 0}</span>

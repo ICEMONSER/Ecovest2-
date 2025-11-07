@@ -64,15 +64,29 @@ const home = {
     // Setup sign up form
     const signUpForm = $('#signUpForm');
     if (signUpForm) {
+      // Role selector toggle logic
+      const roleGrid = $('#signUpRoleGrid');
+      if (roleGrid) {
+        roleGrid.addEventListener('click', (e) => {
+          const card = e.target.closest('.role-card');
+          if (!card) return;
+          card.classList.toggle('selected');
+        });
+      }
+
       signUpForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const username = $('#signUpUsername').value.trim();
         const email = $('#signUpEmail').value.trim();
         const password = $('#signUpPassword').value;
         const confirmPassword = $('#signUpConfirmPassword').value;
+        const roleButtons = $$('.role-card');
+        const selectedRoles = roleButtons
+          .filter(btn => btn.classList.contains('selected'))
+          .map(btn => btn.dataset.role);
 
-        if (!username || !email || !password || !confirmPassword) {
-          ui.toast('Please fill all fields', 'error');
+        if (!username || !email || !password || !confirmPassword || selectedRoles.length === 0) {
+          ui.toast('Please fill all fields and select at least one role', 'error');
           return;
         }
 
@@ -80,7 +94,7 @@ const home = {
         submitBtn.disabled = true;
         submitBtn.textContent = 'Signing up...';
 
-        const result = await auth.signUp(username, email, password, confirmPassword);
+        const result = await auth.signUp(username, email, password, confirmPassword, selectedRoles);
 
         if (!result.success) {
           ui.toast(result.error || 'Sign up failed', 'error');

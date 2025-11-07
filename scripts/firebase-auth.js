@@ -25,11 +25,16 @@ const firebaseAuth = {
         // Continue with default profile if fetch fails
       }
       
+      const roles = Array.isArray(profile.roles)
+        ? profile.roles
+        : (profile.role ? [profile.role] : []);
+
       const session = {
         uid: user.uid,
         username: profile.username || user.email.split('@')[0],
         email: user.email,
-        loggedInAt: Date.now()
+        loggedInAt: Date.now(),
+        roles
       };
 
       // Save to localStorage for compatibility
@@ -59,7 +64,7 @@ const firebaseAuth = {
   },
 
   // Sign up with email and password
-  signUp: async (username, email, password, confirmPassword) => {
+  signUp: async (username, email, password, confirmPassword, roleOrRoles) => {
     try {
       if (!firebaseServices.isInitialized()) {
         return { success: false, error: 'Firebase not initialized' };
@@ -78,6 +83,12 @@ const firebaseAuth = {
       const user = userCredential.user;
 
       // Create user profile in database
+      const selectedRoles = Array.isArray(roleOrRoles)
+        ? roleOrRoles
+        : roleOrRoles
+          ? [roleOrRoles]
+          : [];
+
       const profileData = {
         username: username.trim(),
         email: email.trim().toLowerCase(),
@@ -85,6 +96,7 @@ const firebaseAuth = {
         level: 'Novice',
         followers: 0,
         following: 0,
+        roles: selectedRoles,
         createdAt: Date.now(),
         updatedAt: Date.now()
       };
@@ -98,7 +110,8 @@ const firebaseAuth = {
         uid: user.uid,
         username: username.trim(),
         email: email.trim().toLowerCase(),
-        loggedInAt: Date.now()
+        loggedInAt: Date.now(),
+        roles: selectedRoles
       };
 
       localStorage.setItem(CONFIG.SESSION_KEY, JSON.stringify(session));
@@ -162,11 +175,13 @@ const firebaseAuth = {
         if (user) {
           firebaseServices.database.ref(`profiles/${user.uid}`).once('value').then(snapshot => {
             const profile = snapshot.val() || {};
+            const existingRoles = Array.isArray(profile.roles) ? profile.roles : (profile.role ? [profile.role] : []);
             const session = {
               uid: user.uid,
               username: profile.username || user.email.split('@')[0],
               email: user.email,
-              loggedInAt: Date.now()
+              loggedInAt: Date.now(),
+              roles: existingRoles
             };
             localStorage.setItem(CONFIG.SESSION_KEY, JSON.stringify(session));
             callback(session);

@@ -61,10 +61,13 @@ const auth = {
       // In localStorage mode, accept any password for existing accounts (for demo)
       // In production with Firebase, password is verified by Firebase
       
+      const profile = store.profiles.get(account.username);
+      const roles = Array.isArray(profile.roles) ? profile.roles : (profile.role ? [profile.role] : []);
       const session = {
         username: account.username,
         email: account.email,
-        loggedInAt: Date.now()
+        loggedInAt: Date.now(),
+        roles
       };
 
       const saved = store.session.save(session);
@@ -88,7 +91,7 @@ const auth = {
   },
 
   // Sign up - Uses Firebase Auth
-  signUp: async (username, email, password, confirmPassword) => {
+  signUp: async (username, email, password, confirmPassword, roleOrRoles) => {
     if (!username || !email || !password) {
       return { success: false, error: 'All fields are required' };
     }
@@ -115,7 +118,7 @@ const auth = {
                                    firebaseAuth;
     
     if (isFirebaseReadySignUp) {
-      const result = await firebaseAuth.signUp(username, email, password, confirmPassword);
+      const result = await firebaseAuth.signUp(username, email, password, confirmPassword, roleOrRoles);
       if (result.success) {
         ui.toast('Account created successfully! Complete the trading game to get started! 🎮', 'success', 4000);
         ui.mountNav();
@@ -139,10 +142,17 @@ const auth = {
       return accountResult;
     }
 
+    const selectedRoles = Array.isArray(roleOrRoles)
+      ? roleOrRoles
+      : roleOrRoles
+        ? [roleOrRoles]
+        : [];
+
     const session = {
       username: username.trim(),
       email: email.trim().toLowerCase(),
-      loggedInAt: Date.now()
+      loggedInAt: Date.now(),
+      roles: selectedRoles
     };
 
     store.session.save(session);
@@ -151,7 +161,8 @@ const auth = {
       profileScore: 0,
       level: 'Novice',
       followers: 0,
-      following: 0
+      following: 0,
+      roles: selectedRoles
     });
 
     ui.toast('Account created successfully! Complete the trading game to get started! 🎮', 'success', 4000);

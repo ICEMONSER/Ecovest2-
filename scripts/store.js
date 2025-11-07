@@ -130,11 +130,16 @@ const store = {
         const data = localStorage.getItem(CONFIG.STORAGE_KEYS.USER_PROFILES);
         const profiles = data ? JSON.parse(data) : {};
         if (!profiles[username]) {
-          return { username, profileScore: 0, level: 'Novice', followers: 0, following: 0, avatarUrl: null };
+          return { username, profileScore: 0, level: 'Novice', followers: 0, following: 0, avatarUrl: null, roles: [] };
         }
-        return { avatarUrl: null, ...profiles[username] };
+        const profile = profiles[username];
+        return {
+          avatarUrl: null,
+          roles: Array.isArray(profile.roles) ? profile.roles : (profile.role ? [profile.role] : []),
+          ...profile
+        };
       } catch (e) {
-        return { username, profileScore: 0, level: 'Novice', followers: 0, following: 0, avatarUrl: null };
+        return { username, profileScore: 0, level: 'Novice', followers: 0, following: 0, avatarUrl: null, roles: [] };
       }
     },
     update: (username, updates) => {
@@ -142,9 +147,18 @@ const store = {
         const data = localStorage.getItem(CONFIG.STORAGE_KEYS.USER_PROFILES);
         const profiles = data ? JSON.parse(data) : {};
         if (!profiles[username]) {
-          profiles[username] = { username, profileScore: 0, level: 'Novice', followers: 0, following: 0, avatarUrl: null };
+          profiles[username] = { username, profileScore: 0, level: 'Novice', followers: 0, following: 0, avatarUrl: null, roles: [] };
         }
-        profiles[username] = { ...profiles[username], ...updates };
+        const current = profiles[username];
+        const mergedRoles = updates.roles
+          ? (Array.isArray(updates.roles) ? updates.roles : [updates.roles])
+          : (Array.isArray(current.roles) ? current.roles : (current.role ? [current.role] : []));
+
+        profiles[username] = {
+          ...current,
+          ...updates,
+          roles: mergedRoles
+        };
         localStorage.setItem(CONFIG.STORAGE_KEYS.USER_PROFILES, JSON.stringify(profiles));
         return true;
       } catch (e) {
