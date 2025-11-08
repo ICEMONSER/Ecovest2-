@@ -9,15 +9,16 @@ const ui = {
     const session = store.session.load();
     
     if (session) {
+      const avatarMarkup = getAvatarPlaceholder(session.username);
       nav.innerHTML = `
         <div class="nav-brand">
-          <a href="./index.html" 
           <a href="./index.html">EcoVest+</a>
         </div>
         <div class="nav-menu">
           <div class="user-menu">
-            <button class="user-menu-toggle" aria-haspopup="true" aria-expanded="false" id="userMenuToggle">
-              ${session.username} ▾
+            <button class="user-menu-toggle" aria-haspopup="true" aria-expanded="false" id="userMenuToggle" title="${sanitize(session.username)}">
+              <span class="user-avatar">${avatarMarkup}</span>
+              <span class="user-menu-arrow">▾</span>
             </button>
             <ul class="user-menu-dropdown" id="userMenuDropdown" role="menu">
               <li role="menuitem"><a href="./profile.html">Profile</a></li>
