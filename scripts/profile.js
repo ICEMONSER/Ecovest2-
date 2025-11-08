@@ -100,8 +100,15 @@ const profilePage = {
           ${isFollowing ? '✓ Following' : '+ Follow'}
         </button>
       ` : '';
-      const deleteButton = isOwnProfile ? `
-        <button class="btn btn-outline" id="deleteAccountBtn" title="Delete Account">Delete Account</button>
+      const ellipsisMenu = isOwnProfile ? `
+        <div class="profile-menu">
+          <button class="profile-menu-toggle" id="profileMenuToggle" aria-haspopup="true" aria-expanded="false" title="More options">
+            <span class="profile-menu-icon">⋯</span>
+          </button>
+          <ul class="profile-menu-dropdown" id="profileMenuDropdown" role="menu">
+            <li role="menuitem"><button id="deleteAccountBtn">Delete Account</button></li>
+          </ul>
+        </div>
       ` : '';
 
       header.innerHTML = `
@@ -110,25 +117,29 @@ const profilePage = {
           ${avatarControls}
         </div>
         <div class="profile-info">
-          <h1 class="profile-username">${sanitize(username)}</h1>
-          <div class="profile-roles">
-            ${roles.length > 0
-              ? roles.map(roleKey => {
-                  const roleMeta = ROLE_DEFINITIONS[roleKey] || { label: roleKey, icon: '✨' };
-                  return `<span class="profile-role-badge"><span class="profile-role-icon">${roleMeta.icon}</span>${sanitize(roleMeta.label)}</span>`;
-                }).join('')
-              : '<span class="profile-role-badge"><span class="profile-role-icon">✨</span>Member</span>'}
-          </div>
-          <div class="profile-badges">
-            <span class="level-badge level-${level.toLowerCase()}">${level}</span>
-            <span class="score-badge">Score: ${profile.profileScore || 0}</span>
-          </div>
-          <div class="profile-stats">
-            <span class="stat-item"><strong>${followers}</strong> Followers</span>
-            <span class="stat-item"><strong>${following}</strong> Following</span>
+          <div class="profile-header-top">
+            <div>
+              <h1 class="profile-username">${sanitize(username)}</h1>
+              <div class="profile-roles">
+                ${roles.length > 0
+                  ? roles.map(roleKey => {
+                      const roleMeta = ROLE_DEFINITIONS[roleKey] || { label: roleKey, icon: '✨' };
+                      return `<span class="profile-role-badge"><span class="profile-role-icon">${roleMeta.icon}</span>${sanitize(roleMeta.label)}</span>`;
+                    }).join('')
+                  : '<span class="profile-role-badge"><span class="profile-role-icon">✨</span>Member</span>'}
+              </div>
+              <div class="profile-badges">
+                <span class="level-badge level-${level.toLowerCase()}">${level}</span>
+                <span class="score-badge">Score: ${profile.profileScore || 0}</span>
+              </div>
+              <div class="profile-stats">
+                <span class="stat-item"><strong>${followers}</strong> Followers</span>
+                <span class="stat-item"><strong>${following}</strong> Following</span>
+              </div>
+            </div>
+            ${ellipsisMenu}
           </div>
           ${followButton}
-          ${deleteButton}
         </div>
       `;
 
@@ -147,7 +158,32 @@ const profilePage = {
           if (!file) return;
           profilePage.handleAvatarUpload({ file, button: changeBtn, input: fileInput });
         });
-        $('#deleteAccountBtn')?.addEventListener('click', () => ui.openModal('deleteAccountModal'));
+        
+        // Profile menu toggle
+        const menuToggle = $('#profileMenuToggle');
+        const menuDropdown = $('#profileMenuDropdown');
+        
+        menuToggle?.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const isExpanded = menuToggle.getAttribute('aria-expanded') === 'true';
+          menuToggle.setAttribute('aria-expanded', !isExpanded);
+          menuDropdown.classList.toggle('active');
+        });
+
+        // Close menu on outside click
+        document.addEventListener('click', (e) => {
+          if (!menuToggle?.contains(e.target) && !menuDropdown?.contains(e.target)) {
+            menuToggle?.setAttribute('aria-expanded', 'false');
+            menuDropdown?.classList.remove('active');
+          }
+        });
+
+        // Delete account button in menu
+        $('#deleteAccountBtn')?.addEventListener('click', () => {
+          menuDropdown.classList.remove('active');
+          menuToggle.setAttribute('aria-expanded', 'false');
+          ui.openModal('deleteAccountModal');
+        });
         const form = $('#deleteAccountForm');
         form?.addEventListener('submit', async (e) => {
           e.preventDefault();

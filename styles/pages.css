@@ -724,6 +724,99 @@
   flex: 1;
 }
 
+.profile-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+}
+
+/* Profile menu (ellipsis) */
+.profile-menu {
+  position: relative;
+}
+
+.profile-menu-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: var(--transition);
+  color: var(--gray-600);
+}
+
+.profile-menu-toggle:hover {
+  background: var(--gray-100);
+  color: var(--gray-900);
+}
+
+.profile-menu-toggle:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.profile-menu-icon {
+  font-size: var(--font-size-xl);
+  line-height: 1;
+  font-weight: 600;
+  transform: rotate(90deg);
+  display: inline-block;
+}
+
+.profile-menu-dropdown {
+  position: absolute;
+  top: calc(100% + var(--spacing-sm));
+  right: 0;
+  background: white;
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-lg);
+  min-width: 160px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: var(--transition);
+  z-index: var(--z-dropdown);
+  list-style: none;
+  padding: var(--spacing-xs) 0;
+  margin: 0;
+}
+
+.profile-menu-dropdown.active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.profile-menu-dropdown li {
+  border-bottom: none;
+}
+
+.profile-menu-dropdown button {
+  display: block;
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  text-align: left;
+  color: var(--gray-900);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: var(--font-size-base);
+  font-family: inherit;
+}
+
+.profile-menu-dropdown button:hover {
+  background: var(--gray-100);
+  color: var(--error);
+}
+
 .profile-username {
   font-size: var(--font-size-3xl);
   margin-bottom: var(--spacing-sm);
