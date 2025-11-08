@@ -1546,6 +1546,88 @@
   animation: fadeIn 0.25s ease;
 }
 
+.goal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(12, 18, 24, 0.75);
+  backdrop-filter: blur(3px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl);
+  z-index: calc(var(--z-modal) + 2);
+}
+
+.goal-overlay.active {
+  display: flex;
+  animation: fadeIn 0.25s ease;
+}
+
+.goal-card {
+  background: #ffffff;
+  color: #0f172a;
+  border-radius: 20px;
+  padding: var(--spacing-xl);
+  max-width: 520px;
+  width: 100%;
+  box-shadow: 0 24px 60px rgba(12, 18, 24, 0.35);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.goal-card h2 {
+  margin-bottom: var(--spacing-xs);
+  color: #0f4f3d;
+}
+
+.goal-intro {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #145b49;
+}
+
+.goal-section h3 {
+  margin-bottom: var(--spacing-xs);
+  color: #0f4f3d;
+}
+
+.goal-section ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: #1f2937;
+}
+
+.rank-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-xs);
+  color: #1f2937;
+}
+
+.goal-hint {
+  font-weight: 600;
+  color: #0f4f3d;
+}
+
+.goal-close {
+  position: absolute;
+  top: var(--spacing-sm);
+  right: var(--spacing-sm);
+  border: none;
+  background: transparent;
+  font-size: 1.6rem;
+  cursor: pointer;
+  color: #64748b;
+  transition: color 0.2s ease;
+}
+
+.goal-close:hover {
+  color: #0f4f3d;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }

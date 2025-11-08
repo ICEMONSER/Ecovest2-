@@ -159,6 +159,7 @@ const escapeGame = {
       escapeGame.bindUI();
       escapeGame.render();
       escapeGame.updateEventCard('Ready?', 'Roll the dice to start your journey toward financial freedom.');
+      escapeGame.showGoalOverlay();
     },
 
     bindUI: () => {
@@ -172,6 +173,7 @@ const escapeGame = {
           escapeGame.closeDealModal();
         }
       });
+      $('#goalCloseBtn')?.addEventListener('click', escapeGame.hideGoalOverlay);
     },
 
     handleRoll: async () => {
@@ -559,6 +561,20 @@ const escapeGame = {
       escapeGame.recalculateNetWorth();
     },
 
+    showGoalOverlay: () => {
+      const overlay = $('#goalOverlay');
+      if (!overlay) return;
+      overlay.classList.add('active');
+      overlay.setAttribute('aria-hidden', 'false');
+    },
+
+    hideGoalOverlay: () => {
+      const overlay = $('#goalOverlay');
+      if (!overlay) return;
+      overlay.classList.remove('active');
+      overlay.setAttribute('aria-hidden', 'true');
+    },
+
     recalculateNetWorth: () => {
       const assetsValue = escapeGame.state.assets.reduce((sum, asset) => sum + (asset.value || asset.cost || 0), 0);
       escapeGame.state.netWorth = escapeGame.state.cash + assetsValue - escapeGame.state.debt;
@@ -718,6 +734,7 @@ const escapeGame = {
       escapeGame.persistProgress();
       escapeGame.render();
       escapeGame.updateEventCard('New Career', 'Fresh start! Roll the dice to begin building cashflow.');
+      escapeGame.showGoalOverlay();
     }
   };
 
