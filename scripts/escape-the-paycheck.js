@@ -677,6 +677,10 @@ const escapeGame = {
     updateEventCard: (title, description, actions = []) => {
       $('#eventTitle').textContent = title;
       $('#eventDescription').textContent = description;
+      const latestEventStat = $('#statLatestEvent');
+      if (latestEventStat) {
+        latestEventStat.textContent = title;
+      }
       const actionsContainer = $('#eventActions');
       if (actionsContainer) {
         actionsContainer.innerHTML = '';
