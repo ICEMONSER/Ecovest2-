@@ -264,9 +264,11 @@ const escapeGame = {
           escapeGame.handlePaycheck();
           break;
         case 'smallDeal':
+          escapeGame.updateEventCard('Smalldeal', event.description || 'Consider investing in a smalldeal opportunity.');
           await escapeGame.handleDeal(event, SMALL_DEALS, 'small');
           break;
         case 'bigDeal':
+          escapeGame.updateEventCard('Bigdeal', event.description || 'Review the bigdeal offer carefully.');
           await escapeGame.handleDeal(event, BIG_DEALS, 'big');
           break;
         case 'doodad':
@@ -325,14 +327,14 @@ const escapeGame = {
       }];
 
       modalBody.innerHTML = `
-        <div class=\"deal-header\">
-          <span class=\"deal-icon\">${dealType === 'small' ? '📈' : '🏢'}</span>
+        <div class="deal-header">
+          <span class="deal-icon">${dealType === 'small' ? '📈' : '🏢'}</span>
           <div>
             <h3>${deal.name}</h3>
             <p>${deal.summary}</p>
           </div>
         </div>
-        <ul class=\"deal-stats\">
+        <ul class="deal-stats">
           <li><strong>Cost:</strong> $${deal.cost.toFixed(0)}</li>
           <li><strong>Monthly Cashflow:</strong> +$${deal.passiveIncome.toFixed(0)}</li>
           <li><strong>Estimated Value:</strong> $${deal.value.toFixed(0)}</li>
@@ -341,7 +343,6 @@ const escapeGame = {
       `;
 
       escapeGame.openDealModal(actions);
-      escapeGame.updateEventCard(boardEvent.label, boardEvent.description, actions);
     },
 
     acceptDeal: (deal, dealType) => {
@@ -628,10 +629,10 @@ const escapeGame = {
         }
 
         cell.innerHTML = `
-          <div class=\"cell-icon\">${tile.icon}</div>
-          <div class=\"cell-label\">${tile.label}</div>
-          <p class=\"cell-description\">${tile.description}</p>
-          ${index === escapeGame.state.position ? '<div class=\"pawn\">🧍‍♂️</div>' : ''}
+          <div class="cell-icon">${tile.icon}</div>
+          <div class="cell-label">${tile.label}</div>
+          <p class="cell-description">${tile.description}</p>
+          ${index === escapeGame.state.position ? '<div class="pawn">🧍‍♂️</div>' : ''}
         `;
         boardContainer.appendChild(cell);
       });
@@ -642,17 +643,17 @@ const escapeGame = {
       if (!list) return;
 
       if (!escapeGame.state.assets.length) {
-        list.innerHTML = '<p class=\"empty-state\">No assets yet. Land on a deal tile to acquire a cash-flowing investment.</p>';
+        list.innerHTML = '<p class="empty-state">No assets yet. Land on a deal tile to acquire a cash-flowing investment.</p>';
         return;
       }
 
       list.innerHTML = escapeGame.state.assets.map(asset => `
-        <div class=\"asset-card\">
-          <div class=\"asset-header\">
-            <span class=\"asset-type\">${asset.type === 'big' ? '🏢 Big Deal' : '📈 Small Deal'}</span>
+        <div class="asset-card">
+          <div class="asset-header">
+            <span class="asset-type">${asset.type === 'big' ? '🏢 Big Deal' : '📈 Small Deal'}</span>
             <h3>${asset.name}</h3>
           </div>
-          <ul class=\"asset-details\">
+          <ul class="asset-details">
             <li><strong>Cashflow:</strong> +$${asset.passiveIncome.toFixed(0)}/turn</li>
             <li><strong>Cost:</strong> $${asset.cost.toFixed(0)}</li>
             <li><strong>Value:</strong> $${asset.value.toFixed(0)}</li>
@@ -670,7 +671,7 @@ const escapeGame = {
       escapeGame.state.eventLog.slice(-CONFIG.ESCAPE_GAME.MAX_EVENT_LOG).reverse().forEach(entry => {
         const item = document.createElement('li');
         item.className = `event-log-item event-${entry.type}`;
-        item.innerHTML = `<span class=\"event-message\">${entry.message}</span><span class=\"event-turn\">Turn ${entry.turn}</span>`;
+        item.innerHTML = `<span class="event-message">${entry.message}</span><span class="event-turn">Turn ${entry.turn}</span>`;
         logContainer.appendChild(item);
       });
     },
