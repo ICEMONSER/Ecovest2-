@@ -94,8 +94,15 @@ const sanitize = (str) => {
 
 const sanitizeUrl = (url) => {
   if (!url) return '';
+  const trimmed = url.trim();
+
+  // Allow data and blob URLs which are generated on the client side
+  if (trimmed.startsWith('data:') || trimmed.startsWith('blob:')) {
+    return trimmed;
+  }
+
   try {
-    const parsed = new URL(url, window.location.origin);
+    const parsed = new URL(trimmed, window.location.origin);
     return parsed.href;
   } catch (error) {
     return '';
@@ -130,10 +137,12 @@ const getLevelBadgeColor = (level) => {
 // Generate avatar placeholder
 const getAvatarPlaceholder = (username) => {
   let avatarUrl = null;
+  let avatarUpdatedAt = 0;
   try {
     if (typeof store !== 'undefined' && store?.profiles?.get) {
       const profile = store.profiles.get(username);
       avatarUrl = profile?.avatarUrl || null;
+      avatarUpdatedAt = profile?.avatarUpdatedAt || 0;
     }
   } catch (error) {
     avatarUrl = null;
@@ -142,7 +151,11 @@ const getAvatarPlaceholder = (username) => {
   if (avatarUrl) {
     const safeUrl = sanitizeUrl(avatarUrl);
     if (safeUrl) {
-      return `<img class="avatar-image" src="${safeUrl}" alt="${sanitize(username)}'s avatar">`;
+      const isInline = safeUrl.startsWith('data:') || safeUrl.startsWith('blob:');
+      const cacheBuster = avatarUpdatedAt && !isInline
+        ? `${safeUrl}${safeUrl.includes('?') ? '&' : '?'}v=${avatarUpdatedAt}`
+        : safeUrl;
+      return `<img class="avatar-image" src="${cacheBuster}" alt="${sanitize(username)}'s avatar">`;
     }
   }
 

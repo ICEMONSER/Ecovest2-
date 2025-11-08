@@ -34,11 +34,31 @@ const firebaseAuth = {
         username: profile.username || user.email.split('@')[0],
         email: user.email,
         loggedInAt: Date.now(),
-        roles
+        roles,
+        avatarUrl: profile.avatarUrl || null,
+        avatarUpdatedAt: profile.avatarUpdatedAt || profile.updatedAt || 0
       };
 
       // Save to localStorage for compatibility
       localStorage.setItem(CONFIG.SESSION_KEY, JSON.stringify(session));
+
+      if (typeof store !== 'undefined' && store?.profiles?.update) {
+        try {
+          store.profiles.update(session.username, {
+            username: session.username,
+            email: session.email,
+            profileScore: profile.profileScore ?? 0,
+            level: profile.level ?? 'Novice',
+            followers: profile.followers ?? 0,
+            following: profile.following ?? 0,
+            roles,
+            avatarUrl: session.avatarUrl,
+            avatarUpdatedAt: session.avatarUpdatedAt
+          });
+        } catch (cacheError) {
+          console.warn('Profile cache sync failed:', cacheError);
+        }
+      }
       
       return { success: true, user: session };
     } catch (error) {
@@ -97,6 +117,8 @@ const firebaseAuth = {
         followers: 0,
         following: 0,
         roles: selectedRoles,
+        avatarUrl: null,
+        avatarUpdatedAt: Date.now(),
         createdAt: Date.now(),
         updatedAt: Date.now()
       };
@@ -111,10 +133,22 @@ const firebaseAuth = {
         username: username.trim(),
         email: email.trim().toLowerCase(),
         loggedInAt: Date.now(),
-        roles: selectedRoles
+        roles: selectedRoles,
+        avatarUrl: null,
+        avatarUpdatedAt: profileData.avatarUpdatedAt
       };
 
       localStorage.setItem(CONFIG.SESSION_KEY, JSON.stringify(session));
+
+      if (typeof store !== 'undefined' && store?.profiles?.update) {
+        try {
+          store.profiles.update(username.trim(), {
+            ...profileData
+          });
+        } catch (cacheError) {
+          console.warn('Profile cache sync failed:', cacheError);
+        }
+      }
 
       return { success: true, user: session };
     } catch (error) {
@@ -181,9 +215,29 @@ const firebaseAuth = {
               username: profile.username || user.email.split('@')[0],
               email: user.email,
               loggedInAt: Date.now(),
-              roles: existingRoles
+              roles: existingRoles,
+              avatarUrl: profile.avatarUrl || null,
+              avatarUpdatedAt: profile.avatarUpdatedAt || profile.updatedAt || 0
             };
             localStorage.setItem(CONFIG.SESSION_KEY, JSON.stringify(session));
+
+            if (typeof store !== 'undefined' && store?.profiles?.update) {
+              try {
+                store.profiles.update(session.username, {
+                  username: session.username,
+                  email: session.email,
+                  profileScore: profile.profileScore ?? 0,
+                  level: profile.level ?? 'Novice',
+                  followers: profile.followers ?? 0,
+                  following: profile.following ?? 0,
+                  roles: existingRoles,
+                  avatarUrl: session.avatarUrl,
+                  avatarUpdatedAt: session.avatarUpdatedAt
+                });
+              } catch (cacheError) {
+                console.warn('Profile cache sync failed:', cacheError);
+              }
+            }
             callback(session);
           });
         } else {

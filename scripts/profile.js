@@ -44,7 +44,37 @@ const profilePage = {
 
   // Load profile data
   loadProfile: async (username) => {
-    const profile = store.profiles.get(username);
+    let profile = store.profiles.get(username);
+
+    // Sync latest profile data from Firebase when available
+    if (typeof firebaseServices !== 'undefined' &&
+        firebaseServices?.isInitialized?.() &&
+        typeof firebaseDB !== 'undefined' &&
+        firebaseDB?.profiles?.getByUsername) {
+      try {
+        const remoteProfile = await firebaseDB.profiles.getByUsername(username);
+        if (remoteProfile) {
+          const normalizedRoles = Array.isArray(remoteProfile.roles)
+            ? remoteProfile.roles
+            : (remoteProfile.role ? [remoteProfile.role] : []);
+          store.profiles.update(username, {
+            username,
+            email: remoteProfile.email || profile.email || '',
+            profileScore: remoteProfile.profileScore ?? profile.profileScore ?? 0,
+            level: remoteProfile.level ?? profile.level ?? 'Novice',
+            followers: remoteProfile.followers ?? profile.followers ?? 0,
+            following: remoteProfile.following ?? profile.following ?? 0,
+            roles: normalizedRoles,
+            avatarUrl: remoteProfile.avatarUrl ?? profile.avatarUrl ?? null,
+            avatarUpdatedAt: remoteProfile.avatarUpdatedAt ?? remoteProfile.updatedAt ?? profile.avatarUpdatedAt ?? 0
+          });
+          profile = store.profiles.get(username);
+        }
+      } catch (error) {
+        console.warn('Failed to sync profile from Firebase:', error);
+      }
+    }
+
     const level = getLevel(profile.profileScore || 0);
     const session = store.session.load();
     const isOwnProfile = username === session.username;
@@ -472,11 +502,20 @@ const profilePage = {
         throw new Error('Upload did not return an image URL.');
       }
 
-      store.profiles.update(session.username, { avatarUrl });
+      const avatarUpdatedAt = Date.now();
+      store.profiles.update(session.username, { avatarUrl, avatarUpdatedAt });
+
+      // Update local session avatar for nav or other components
+      const currentSession = store.session.load();
+      if (currentSession) {
+        store.session.save({ ...currentSession, avatarUrl, avatarUpdatedAt });
+      }
+
+      profilePage.updateAvatarDisplay(session.username, avatarUrl, avatarUpdatedAt);
 
       if (hasFirebase && firebaseUser?.uid && typeof firebaseDB !== 'undefined' && firebaseDB?.profiles?.update) {
         try {
-          await firebaseDB.profiles.update(firebaseUser.uid, { avatarUrl });
+          await firebaseDB.profiles.update(firebaseUser.uid, { avatarUrl, avatarUpdatedAt });
         } catch (error) {
           console.warn('Failed to sync avatar with Firebase profile:', error);
         }
@@ -484,7 +523,7 @@ const profilePage = {
 
       ui.toast('Profile photo updated!', 'success');
       ui.mountNav();
-      profilePage.loadProfile(session.username);
+      await profilePage.loadProfile(session.username);
     } catch (error) {
       console.error('Avatar upload error:', error);
       ui.toast(error?.message || 'Failed to upload avatar', 'error');
@@ -497,6 +536,32 @@ const profilePage = {
         input.value = '';
       }
     }
+  },
+
+  updateAvatarDisplay: (username, avatarUrl, avatarUpdatedAt = Date.now()) => {
+    const container = $('#profileHeader .profile-avatar');
+    if (!container) return;
+
+    if (avatarUrl) {
+      const safeUrl = sanitizeUrl(avatarUrl);
+      if (safeUrl) {
+        const isInline = safeUrl.startsWith('data:') || safeUrl.startsWith('blob:');
+        const cacheBusted = avatarUpdatedAt && !isInline
+          ? `${safeUrl}${safeUrl.includes('?') ? '&' : '?'}v=${avatarUpdatedAt}`
+          : safeUrl;
+
+        const existingImage = container.querySelector('.avatar-image');
+        if (existingImage) {
+          existingImage.src = cacheBusted;
+          existingImage.alt = `${sanitize(username)}'s avatar`;
+        } else {
+          container.innerHTML = `<img class="avatar-image" src="${cacheBusted}" alt="${sanitize(username)}'s avatar">`;
+        }
+        return;
+      }
+    }
+
+    container.innerHTML = getAvatarPlaceholder(username);
   },
 
   // Handle follow

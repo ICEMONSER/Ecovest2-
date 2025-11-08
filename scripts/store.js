@@ -130,11 +130,21 @@ const store = {
         const data = localStorage.getItem(CONFIG.STORAGE_KEYS.USER_PROFILES);
         const profiles = data ? JSON.parse(data) : {};
         if (!profiles[username]) {
-          return { username, profileScore: 0, level: 'Novice', followers: 0, following: 0, avatarUrl: null, roles: [] };
+          return {
+            username,
+            profileScore: 0,
+            level: 'Novice',
+            followers: 0,
+            following: 0,
+            avatarUrl: null,
+            avatarUpdatedAt: 0,
+            roles: []
+          };
         }
         const profile = profiles[username];
         return {
           avatarUrl: null,
+          avatarUpdatedAt: 0,
           roles: Array.isArray(profile.roles) ? profile.roles : (profile.role ? [profile.role] : []),
           ...profile
         };
@@ -147,7 +157,16 @@ const store = {
         const data = localStorage.getItem(CONFIG.STORAGE_KEYS.USER_PROFILES);
         const profiles = data ? JSON.parse(data) : {};
         if (!profiles[username]) {
-          profiles[username] = { username, profileScore: 0, level: 'Novice', followers: 0, following: 0, avatarUrl: null, roles: [] };
+          profiles[username] = {
+            username,
+            profileScore: 0,
+            level: 'Novice',
+            followers: 0,
+            following: 0,
+            avatarUrl: null,
+            avatarUpdatedAt: 0,
+            roles: []
+          };
         }
         const current = profiles[username];
         const mergedRoles = updates.roles
@@ -157,6 +176,7 @@ const store = {
         profiles[username] = {
           ...current,
           ...updates,
+          avatarUpdatedAt: updates.avatarUpdatedAt ?? current.avatarUpdatedAt ?? Date.now(),
           roles: mergedRoles
         };
         localStorage.setItem(CONFIG.STORAGE_KEYS.USER_PROFILES, JSON.stringify(profiles));

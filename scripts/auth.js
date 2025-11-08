@@ -67,7 +67,9 @@ const auth = {
         username: account.username,
         email: account.email,
         loggedInAt: Date.now(),
-        roles
+        roles,
+        avatarUrl: profile.avatarUrl || null,
+        avatarUpdatedAt: profile.avatarUpdatedAt || profile.updatedAt || 0
       };
 
       const saved = store.session.save(session);
@@ -152,7 +154,9 @@ const auth = {
       username: username.trim(),
       email: email.trim().toLowerCase(),
       loggedInAt: Date.now(),
-      roles: selectedRoles
+      roles: selectedRoles,
+      avatarUrl: null,
+      avatarUpdatedAt: Date.now()
     };
 
     store.session.save(session);
@@ -162,7 +166,9 @@ const auth = {
       level: 'Novice',
       followers: 0,
       following: 0,
-      roles: selectedRoles
+      roles: selectedRoles,
+      avatarUrl: null,
+      avatarUpdatedAt: session.avatarUpdatedAt
     });
 
     ui.toast('Account created successfully! Complete the trading game to get started! 🎮', 'success', 4000);
