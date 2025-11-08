@@ -43,7 +43,7 @@ const home = {
         submitBtn.textContent = 'Signing in...';
 
         try {
-          const result = await auth.signIn(email, password);
+        const result = await auth.signIn(email, password);
 
           if (!result || !result.success) {
             const errorMsg = result?.error || 'Sign in failed. Please check your credentials.';

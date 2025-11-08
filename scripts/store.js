@@ -1,27 +1,90 @@
 // Session and data storage management
 
+let inMemorySession = null;
+
 const store = {
   // Session management
   session: {
     load: () => {
-      try {
-        const data = localStorage.getItem(CONFIG.SESSION_KEY);
-        return data ? JSON.parse(data) : null;
-      } catch (e) {
-        return null;
+      const storages = [];
+
+      if (typeof window !== 'undefined') {
+        try {
+          if (window.localStorage) storages.push(window.localStorage);
+        } catch (error) {
+          console.warn('localStorage unavailable, falling back:', error);
+        }
+        try {
+          if (window.sessionStorage) storages.push(window.sessionStorage);
+        } catch (error) {
+          console.warn('sessionStorage unavailable:', error);
+        }
       }
+
+      for (const storage of storages) {
+        try {
+          const data = storage.getItem(CONFIG.SESSION_KEY);
+          if (data) {
+            return JSON.parse(data);
+          }
+        } catch (error) {
+          console.warn('Failed to read session from storage:', error);
+        }
+      }
+
+      if (inMemorySession) {
+        return inMemorySession;
+      }
+
+      return null;
     },
     save: (data) => {
-      try {
-        localStorage.setItem(CONFIG.SESSION_KEY, JSON.stringify(data));
-        return true;
-      } catch (e) {
-        console.error('Failed to save session:', e);
-        return false;
+      const payload = JSON.stringify(data);
+      const storages = [];
+
+      if (typeof window !== 'undefined') {
+        try {
+          if (window.localStorage) storages.push(window.localStorage);
+        } catch (error) {
+          console.warn('localStorage unavailable, trying alternatives:', error);
+        }
+        try {
+          if (window.sessionStorage) storages.push(window.sessionStorage);
+        } catch (error) {
+          console.warn('sessionStorage unavailable:', error);
+        }
       }
+
+      for (const storage of storages) {
+        try {
+          storage.setItem(CONFIG.SESSION_KEY, payload);
+          inMemorySession = data;
+          return true;
+        } catch (error) {
+          console.warn('Failed to write session to storage:', error);
+        }
+      }
+
+      console.warn('All persistent storage options failed. Session will be kept in memory only.');
+      inMemorySession = data;
+      return true;
     },
     clear: () => {
-      localStorage.removeItem(CONFIG.SESSION_KEY);
+      if (typeof window === 'undefined') return;
+
+      try {
+        window.localStorage?.removeItem(CONFIG.SESSION_KEY);
+      } catch (error) {
+        console.warn('Failed to clear localStorage session:', error);
+      }
+
+      try {
+        window.sessionStorage?.removeItem(CONFIG.SESSION_KEY);
+      } catch (error) {
+        console.warn('Failed to clear sessionStorage session:', error);
+      }
+
+      inMemorySession = null;
     }
   },
 

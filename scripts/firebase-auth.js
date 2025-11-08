@@ -39,8 +39,21 @@ const firebaseAuth = {
         avatarUpdatedAt: profile.avatarUpdatedAt || profile.updatedAt || 0
       };
 
-      // Save to localStorage for compatibility
-      localStorage.setItem(CONFIG.SESSION_KEY, JSON.stringify(session));
+      let sessionSaved = false;
+      if (typeof store !== 'undefined' && store?.session?.save) {
+        sessionSaved = store.session.save(session);
+      } else {
+        try {
+          localStorage.setItem(CONFIG.SESSION_KEY, JSON.stringify(session));
+          sessionSaved = true;
+        } catch (storageError) {
+          console.warn('Failed to persist Firebase session:', storageError);
+        }
+      }
+
+      if (!sessionSaved) {
+        console.warn('Session persistence skipped. User will rely on Firebase auth state.');
+      }
 
       if (typeof store !== 'undefined' && store?.profiles?.update) {
         try {
@@ -138,7 +151,21 @@ const firebaseAuth = {
         avatarUpdatedAt: profileData.avatarUpdatedAt
       };
 
-      localStorage.setItem(CONFIG.SESSION_KEY, JSON.stringify(session));
+      let sessionSaved = false;
+      if (typeof store !== 'undefined' && store?.session?.save) {
+        sessionSaved = store.session.save(session);
+      } else {
+        try {
+          localStorage.setItem(CONFIG.SESSION_KEY, JSON.stringify(session));
+          sessionSaved = true;
+        } catch (storageError) {
+          console.warn('Failed to persist Firebase session:', storageError);
+        }
+      }
+
+      if (!sessionSaved) {
+        console.warn('Session persistence skipped. User will rely on Firebase auth state.');
+      }
 
       if (typeof store !== 'undefined' && store?.profiles?.update) {
         try {

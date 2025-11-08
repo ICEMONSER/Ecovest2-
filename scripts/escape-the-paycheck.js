@@ -436,6 +436,7 @@
     recordVictoryHistory: async () => {
       const record = {
         username: escapeGame.session.username,
+        gameType: 'escape',
         career: escapeGame.state.careerKey,
         salary: escapeGame.state.salary,
         passiveIncome: escapeGame.state.passiveIncome,
@@ -590,6 +591,7 @@
           if (meta.roll || meta.eventType || meta.victory) {
             await docRef.collection('events').add({
               ...meta,
+              gameType: 'escape',
               state: {
                 cash: escapeGame.state.cash,
                 passiveIncome: escapeGame.state.passiveIncome,

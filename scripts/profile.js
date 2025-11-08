@@ -409,7 +409,8 @@ const profilePage = {
   renderGameHistoryCard: (game) => {
     const completedAt = formatTime(game.completedAt);
 
-    if (game.passiveIncome !== undefined && game.salary !== undefined) {
+    const isEscapeGame = game.gameType === 'escape' || game.career || game.passiveIncome !== undefined;
+    if (isEscapeGame) {
       const progress = game.salary ? Math.round((game.passiveIncome / game.salary) * 100) : 0;
       return `
         <div class="game-history-item">
@@ -451,7 +452,8 @@ const profilePage = {
       `;
     }
 
-    if (game.profit !== undefined) {
+    const isTradingGame = game.gameType === 'trading' || game.profit !== undefined;
+    if (isTradingGame) {
       return `
         <div class="game-history-item">
           <div class="game-history-header">

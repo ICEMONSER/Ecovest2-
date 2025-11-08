@@ -33,6 +33,7 @@ nav .container {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
+  margin-left: var(--spacing-sm);
 }
 
 .nav-brand a {
@@ -60,7 +61,7 @@ nav .container {
 /* User menu - Fixed in top right corner */
 .user-menu {
   position: fixed;
-  top: var(--spacing-md);
+  top: calc(var(--spacing-sm) + 2px);
   right: var(--spacing-md);
   z-index: calc(var(--z-dropdown) + 1);
   margin-left: 0;
