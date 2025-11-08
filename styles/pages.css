@@ -1267,6 +1267,11 @@
   transform: translateY(-4px);
 }
 
+.escape-cell.trail-step {
+  border: 2px solid rgba(60, 207, 145, 0.45);
+  box-shadow: 0 0 18px rgba(60, 207, 145, 0.22);
+}
+
 .escape-cell-paycheck { background: rgba(60, 207, 145, 0.08); }
 .escape-cell-smallDeal { background: rgba(3, 111, 255, 0.08); }
 .escape-cell-bigDeal { background: rgba(253, 168, 0, 0.08); }

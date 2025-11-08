@@ -28,6 +28,7 @@ const CONFIG = {
     PASSIVE_GOAL_MULTIPLIER: 1.01, // passive income must exceed salary by at least 1%
     DOWNSIZE_TURNS: 1,
     CHARITY_BONUS: 200,
+    STEP_DELAY: 240,
     SMALL_DEAL_RANGE: { minCost: 200, maxCost: 1200 },
     BIG_DEAL_RANGE: { minCost: 1500, maxCost: 8000 },
     MAX_EVENT_LOG: 6

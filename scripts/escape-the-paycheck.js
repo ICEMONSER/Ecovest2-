@@ -130,7 +130,9 @@
     firebase?.firestore?.FieldValue?.serverTimestamp
   ) ? firebase.firestore.FieldValue.serverTimestamp() : null;
 
-  const escapeGame = {
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const escapeGame = {
     session: null,
     firebaseReady: false,
     firestore: null,
@@ -145,10 +147,15 @@
         return;
       }
 
+      try {
+        localStorage.removeItem(CONFIG.STORAGE_KEYS.GAME_PROGRESS);
+      } catch (error) {
+        console.warn('Failed to clear saved game data:', error);
+      }
+
       ensureFirebaseServices();
 
-      await escapeGame.loadProgress();
-
+      escapeGame.resetState();
       escapeGame.bindUI();
       escapeGame.render();
       escapeGame.updateEventCard('Ready?', 'Roll the dice to start your journey toward financial freedom.');
@@ -187,7 +194,7 @@
         diceResult.classList.remove('rolling');
         diceResult.textContent = roll;
 
-        escapeGame.movePawn(roll);
+        await escapeGame.animateMovement(roll);
         escapeGame.state.turnCount += 1;
         escapeGame.applyPassiveCashflow();
 
@@ -209,9 +216,38 @@
       }, 780);
     },
 
-    movePawn: (steps) => {
+    animateMovement: async (steps) => {
       const boardSize = BOARD.length;
-      escapeGame.state.position = (escapeGame.state.position + steps) % boardSize;
+      const startIndex = escapeGame.state.position;
+      escapeGame.renderBoard();
+      const boardContainer = $('#escapeBoard');
+
+      if (!boardContainer) {
+        escapeGame.state.position = (startIndex + steps) % boardSize;
+        return;
+      }
+
+      const cells = Array.from(boardContainer.querySelectorAll('.escape-cell'));
+      const stepDelay = CONFIG?.ESCAPE_GAME?.STEP_DELAY || 240;
+
+      const clearHighlights = () => {
+        cells.forEach(cell => cell.classList.remove('active', 'trail-step'));
+      };
+
+      clearHighlights();
+      cells[startIndex]?.classList.add('trail-step');
+
+      for (let hop = 1; hop <= steps; hop += 1) {
+        const nextIndex = (startIndex + hop) % boardSize;
+        clearHighlights();
+        if (hop !== steps) cells[nextIndex]?.classList.add('trail-step');
+        cells[nextIndex]?.classList.add('active');
+        await delay(stepDelay);
+      }
+
+      escapeGame.state.position = (startIndex + steps) % boardSize;
+      clearHighlights();
+      cells[escapeGame.state.position]?.classList.add('active');
     },
 
     applyPassiveCashflow: () => {
@@ -496,47 +532,7 @@
       }
     },
 
-    loadProgress: async () => {
-      const localKey = CONFIG.STORAGE_KEYS.GAME_PROGRESS;
-      let loaded = false;
-
-      if (firebaseServices?.isInitialized?.() && escapeGame.session?.uid) {
-        try {
-          escapeGame.firestore = firebaseServices.firestore || firebase.firestore();
-          const doc = await escapeGame.firestore.collection('gameProgress').doc(escapeGame.session.uid).get();
-          if (doc.exists) {
-            const data = doc.data();
-            if (data?.state) {
-              escapeGame.state = { ...stateTemplate(), ...data.state };
-              loaded = true;
-            }
-          }
-        } catch (error) {
-          console.warn('Failed to load progress from Firestore:', error);
-        }
-      }
-
-      if (!loaded) {
-        try {
-          const cached = localStorage.getItem(localKey);
-          if (cached) {
-            const parsed = JSON.parse(cached);
-            if (parsed && parsed.state) {
-              escapeGame.state = { ...stateTemplate(), ...parsed.state };
-              loaded = true;
-            }
-          }
-        } catch (error) {
-          console.warn('Failed to parse local game progress:', error);
-        }
-      }
-
-      if (!loaded) {
-        escapeGame.startNewCareer();
-      }
-    },
-
-    startNewCareer: () => {
+    resetState: () => {
       const careers = Object.keys(CAREERS);
       const randomKey = careers[Math.floor(Math.random() * careers.length)];
       escapeGame.setCareer(randomKey);
@@ -551,7 +547,7 @@
         careerKey,
         cash: career.startingCash,
         salary: career.salary,
-        passiveIncome: career.passiveIncome,
+        passiveIncome: 0,
         expenses: career.expenses,
         debt: career.debt,
         netWorth: career.startingCash - career.debt,
@@ -559,55 +555,8 @@
       };
     },
 
-    persistProgress: async (meta = {}) => {
+    persistProgress: async () => {
       escapeGame.recalculateNetWorth();
-
-      const serializedState = {
-        ...escapeGame.state,
-        netWorth: escapeGame.state.netWorth,
-        lastUpdated: Date.now()
-      };
-
-      try {
-        localStorage.setItem(CONFIG.STORAGE_KEYS.GAME_PROGRESS, JSON.stringify({
-          state: serializedState,
-          uid: escapeGame.session?.uid || null
-        }));
-      } catch (error) {
-        console.warn('Failed to store progress locally:', error);
-      }
-
-      if (firebaseServices?.isInitialized?.() && escapeGame.session?.uid && escapeGame.firestore) {
-        try {
-          const docRef = escapeGame.firestore.collection('gameProgress').doc(escapeGame.session.uid);
-          await docRef.set({
-            uid: escapeGame.session.uid,
-            username: escapeGame.session.username,
-            version: '1.0',
-            state: serializedState,
-            updatedAt: getServerTimestamp()
-          }, { merge: true });
-
-          if (meta.roll || meta.eventType || meta.victory) {
-            await docRef.collection('events').add({
-              ...meta,
-              gameType: 'escape',
-              state: {
-                cash: escapeGame.state.cash,
-                passiveIncome: escapeGame.state.passiveIncome,
-                salary: escapeGame.state.salary,
-                expenses: escapeGame.state.expenses,
-                debt: escapeGame.state.debt,
-                netWorth: escapeGame.state.netWorth,
-                turnCount: escapeGame.state.turnCount
-              },
-              createdAt: getServerTimestamp()
-            });
-          }
-        } catch (error) {
-          console.warn('Failed to persist progress to Firestore:', error);
-        }
-      }
     },
 
     recalculateNetWorth: () => {
@@ -765,7 +714,7 @@
 
     resetGame: () => {
       if (!confirm('Start a new Escape the Paycheck game? Your current progress will be replaced.')) return;
-      escapeGame.startNewCareer();
+      escapeGame.resetState();
       escapeGame.persistProgress();
       escapeGame.render();
       escapeGame.updateEventCard('New Career', 'Fresh start! Roll the dice to begin building cashflow.');
