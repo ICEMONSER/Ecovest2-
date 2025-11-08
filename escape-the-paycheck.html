@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Escape the Paycheck - EcoVest+</title>
+  <link rel="stylesheet" href="./styles/base.css">
+  <link rel="stylesheet" href="./styles/layout.css">
+  <link rel="stylesheet" href="./styles/components.css">
+  <link rel="stylesheet" href="./styles/pages.css">
+</head>
+<body class="escape-body">
+  <nav>
+    <div class="container">
+      <!-- Navigation will be mounted by ui.js -->
+    </div>
+  </nav>
+
+  <main class="escape-main-wrapper">
+    <div class="container">
+      <div class="escape-wrapper" id="escapeGameRoot">
+        <section class="escape-header">
+          <div class="escape-title">
+            <h1>Escape the Paycheck</h1>
+            <p>Grow passive income, crush expenses, and gain financial freedom.</p>
+          </div>
+          <div class="career-card" id="careerCard">
+            <div class="career-avatar">
+              <span id="careerEmoji" aria-hidden="true">💼</span>
+            </div>
+            <div class="career-info">
+              <h2 id="careerName">Career</h2>
+              <p id="careerSummary">Loading your profession...</p>
+            </div>
+            <button class="btn btn-ghost" id="resetGameBtn" type="button">Switch Career</button>
+          </div>
+        </section>
+
+        <section class="escape-dashboard">
+          <div class="stat-grid">
+            <div class="stat-card">
+              <span class="stat-label">Cash</span>
+              <span class="stat-value" id="statCash">$0</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Salary</span>
+              <span class="stat-value" id="statSalary">$0</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Passive Income</span>
+              <span class="stat-value" id="statPassive">$0</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Expenses</span>
+              <span class="stat-value" id="statExpenses">$0</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Debt</span>
+              <span class="stat-value" id="statDebt">$0</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Net Worth</span>
+              <span class="stat-value" id="statNetWorth">$0</span>
+            </div>
+          </div>
+
+          <div class="escape-progress-card">
+            <div class="progress-header">
+              <span id="progressLabel">Passive vs Salary</span>
+              <span id="progressAmount">$0 / $0</span>
+            </div>
+            <div class="progress-bar escape-progress">
+              <div class="progress-fill" id="progressFill"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="escape-content">
+          <div class="escape-board-wrapper">
+            <div class="escape-board" id="escapeBoard" aria-label="Escape the Paycheck board"></div>
+          </div>
+
+          <aside class="escape-sidebar">
+            <div class="dice-card">
+              <button class="btn btn-primary btn-lg" id="rollDiceBtn" type="button">Roll Dice 🎲</button>
+              <div class="dice-result" id="diceResult" aria-live="polite">--</div>
+              <div class="turn-info" id="turnInfo">Roll to begin</div>
+            </div>
+
+            <div class="event-card" aria-live="assertive">
+              <h3 id="eventTitle">Ready?</h3>
+              <p id="eventDescription">Roll the dice to start your journey toward financial freedom.</p>
+              <div class="event-actions" id="eventActions"></div>
+            </div>
+
+            <div class="event-log-card">
+              <h4>Latest Events</h4>
+              <ul id="eventLog" class="event-log-list"></ul>
+            </div>
+          </aside>
+        </section>
+
+        <section class="escape-assets">
+          <div class="assets-header">
+            <h2>Portfolio & Cashflow</h2>
+            <p>Assets you collect increase passive income each turn.</p>
+          </div>
+          <div id="assetsList" class="asset-list">
+            <p class="empty-state">Land on a deal tile to add your first asset.</p>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>&copy; 2024 EcoVest+. All rights reserved.</p>
+      <p><a href="terms.html">Terms of Service</a></p>
+    </div>
+  </footer>
+
+  <div class="escape-modal" id="dealModal" role="dialog" aria-modal="true" aria-labelledby="dealModalTitle">
+    <div class="escape-modal-content">
+      <button class="escape-modal-close" id="closeDealModal" aria-label="Close modal">×</button>
+      <div id="dealModalBody"></div>
+    </div>
+  </div>
+
+  <div class="escape-overlay" id="escapeVictory" role="dialog" aria-modal="true" aria-labelledby="victoryTitle">
+    <div class="escape-victory-card">
+      <div class="victory-icon">🚀</div>
+      <h2 id="victoryTitle">You escaped the paycheck!</h2>
+      <p id="victoryMessage">Passive income has overtaken your salary. Amazing progress!</p>
+      <div class="victory-actions">
+        <button class="btn btn-primary" id="victoryContinueBtn" type="button">Share to Community</button>
+        <button class="btn btn-outline" id="victoryCloseBtn" type="button">Keep Playing</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+  <!-- Environment Variables -->
+  <script>
+    window.__ENV = window.__ENV || {
+      FIREBASE_API_KEY: 'AIzaSyD3v99P_uq3cIMIUUKroFr_qbcLsbY-i3Q',
+      FIREBASE_AUTH_DOMAIN: 'ecovest-37a65.firebaseapp.com',
+      FIREBASE_DATABASE_URL: 'https://ecovest-37a65-default-rtdb.asia-southeast1.firebasedatabase.app',
+      FIREBASE_PROJECT_ID: 'ecovest-37a65',
+      FIREBASE_STORAGE_BUCKET: 'ecovest-37a65.firebasestorage.app',
+      FIREBASE_MESSAGING_SENDER_ID: '63854480161',
+      FIREBASE_APP_ID: '1:63854480161:web:bf94c2bbd0c5b4c4650c60'
+    };
+  </script>
+
+  <script src="./scripts/config.js"></script>
+  <script src="./scripts/firebase-config.js"></script>
+  <script src="./scripts/firebase-auth.js"></script>
+  <script src="./scripts/firebase-db.js"></script>
+  <script src="./scripts/firebase-storage.js"></script>
+  <script src="./scripts/utils.js"></script>
+  <script src="./scripts/indexedDB.js"></script>
+  <script src="./scripts/store.js"></script>
+  <script src="./scripts/ui.js"></script>
+  <script src="./scripts/auth.js"></script>
+  <script src="./scripts/api.js"></script>
+  <script src="./scripts/escape-the-paycheck.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      ui.mountNav();
+      escapeGame.init();
+    });
+  </script>
+</body>
+</html>
+
+

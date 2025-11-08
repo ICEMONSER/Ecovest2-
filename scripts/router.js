@@ -11,7 +11,7 @@ const router = {
   getCurrentPage: () => {
     const path = window.location.pathname;
     if (path.includes('feed.html')) return 'feed';
-    if (path.includes('game.html')) return 'game';
+    if (path.includes('escape-the-paycheck.html') || path.includes('game.html')) return 'game';
     if (path.includes('profile.html')) return 'profile';
     if (path.includes('terms.html')) return 'terms';
     return 'index';

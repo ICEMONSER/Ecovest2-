@@ -70,9 +70,21 @@
 }
 
 .btn-outline:hover {
-  background: var(--primary);
-  color: white;
-  text-decoration: none;
+  background: rgba(60, 207, 145, 0.12);
+  color: var(--primary-dark);
+}
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid rgba(60, 207, 145, 0.25);
+  color: var(--primary-dark);
+  padding: var(--spacing-sm) var(--spacing-md);
+  transition: all 0.2s ease;
+}
+
+.btn-ghost:hover {
+  background: rgba(60, 207, 145, 0.08);
+  border-color: rgba(60, 207, 145, 0.6);
 }
 
 .btn-sm {

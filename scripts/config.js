@@ -5,6 +5,7 @@ const CONFIG = {
     POSTS: 'ev.posts',
     COMMENTS: 'ev.comments',
     GAME_HISTORY: 'ev.gameHistory',
+    GAME_PROGRESS: 'ev.escapeGame.progress',
     USER_PROFILES: 'ev.userProfiles',
     USER_ACCOUNTS: 'ev.userAccounts',
     FOLLOWS: 'ev.follows',
@@ -21,6 +22,15 @@ const CONFIG = {
     COMPANIES_PER_ROUND: 2,
     PRICE_FLUCTUATION_MIN: 0.10, // 10%
     PRICE_FLUCTUATION_MAX: 0.30 // 30%
+  },
+  ESCAPE_GAME: {
+    BOARD_SIZE: 16,
+    PASSIVE_GOAL_MULTIPLIER: 1.01, // passive income must exceed salary by at least 1%
+    DOWNSIZE_TURNS: 1,
+    CHARITY_BONUS: 200,
+    SMALL_DEAL_RANGE: { minCost: 200, maxCost: 1200 },
+    BIG_DEAL_RANGE: { minCost: 1500, maxCost: 8000 },
+    MAX_EVENT_LOG: 6
   },
   IMAGE: {
     MAX_SIZE: 5 * 1024 * 1024, // 5MB

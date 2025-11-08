@@ -15,7 +15,7 @@ const home = {
             <p>Ready to start your journey?</p>
             <div class="hero-actions">
               <a href="./feed.html" class="btn btn-primary">Go to Community Feed</a>
-              <a href="./game.html" class="btn btn-outline">Play Trading Game</a>
+              <a href="./escape-the-paycheck.html" class="btn btn-outline">Play Investment Game</a>
               <a href="./profile.html" class="btn btn-outline">View Profile</a>
             </div>
           </div>

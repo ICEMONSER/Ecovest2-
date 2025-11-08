@@ -27,9 +27,9 @@ const profilePage = {
     const profile = store.profiles.get(session.username);
     // Only redirect if user is still Novice AND has no score (hasn't played at all)
     if (profile.level === 'Novice' && (!profile.profileScore || profile.profileScore < 20)) {
-      ui.toast('Please complete the trading game first! 🎮', 'info', 4000);
+      ui.toast('Try Escape the Paycheck to unlock community features! 🎲', 'info', 4000);
       setTimeout(() => {
-        window.location.href = './game.html';
+        window.location.href = './escape-the-paycheck.html';
       }, 1500);
       return;
     }
@@ -395,66 +395,107 @@ const profilePage = {
     const history = store.gameHistory.getAll(username);
 
     if (history.length === 0) {
-      container.innerHTML = '<p class="empty-state">No game history yet. <a href="./game.html">Play your first game!</a></p>';
+      container.innerHTML = '<p class="empty-state">No game history yet. <a href="./escape-the-paycheck.html">Play Escape the Paycheck!</a></p>';
       return;
     }
 
     container.innerHTML = `
       <div class="game-history-list">
-        ${history.map(game => {
-          // Support both old quiz format and new trading format
-          if (game.profit !== undefined) {
-            // Trading game format
-            return `
-              <div class="game-history-item">
-                <div class="game-history-header">
-                  <span class="level-badge level-novice">Trading Game</span>
-                  <time>${formatTime(game.completedAt)}</time>
-                </div>
-                <div class="game-history-stats">
-                  <div class="stat">
-                    <span class="stat-label">Initial:</span>
-                    <span class="stat-value">$${game.initialCoins?.toFixed(2) || '0.00'}</span>
-                  </div>
-                  <div class="stat">
-                    <span class="stat-label">Final:</span>
-                    <span class="stat-value">$${game.finalCoins?.toFixed(2) || '0.00'}</span>
-                  </div>
-                  <div class="stat">
-                    <span class="stat-label">Profit:</span>
-                    <span class="stat-value ${game.profit >= 0 ? 'positive' : 'negative'}">
-                      ${game.profit >= 0 ? '+' : ''}$${game.profit?.toFixed(2) || '0.00'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            `;
-          } else {
-            // Quiz format (backward compatibility)
-            return `
-              <div class="game-history-item">
-                <div class="game-history-header">
-                  <span class="level-badge level-${game.level?.toLowerCase() || 'novice'}">${game.level || 'Quiz'}</span>
-                  <time>${formatTime(game.completedAt)}</time>
-                </div>
-                <div class="game-history-stats">
-                  <div class="stat">
-                    <span class="stat-label">Score:</span>
-                    <span class="stat-value">${game.score || 0}</span>
-                  </div>
-                  <div class="stat">
-                    <span class="stat-label">Accuracy:</span>
-                    <span class="stat-value">${game.accuracy || 0}%</span>
-                  </div>
-                  <div class="stat">
-                    <span class="stat-label">Correct:</span>
-                    <span class="stat-value">${game.correctCount || 0}/${game.totalQuestions || 0}</span>
-                  </div>
-                </div>
-              </div>
-            `;
-          }
-        }).join('')}
+        ${history.map(game => profilePage.renderGameHistoryCard(game)).join('')}
+      </div>
+    `;
+  },
+
+  renderGameHistoryCard: (game) => {
+    const completedAt = formatTime(game.completedAt);
+
+    if (game.passiveIncome !== undefined && game.salary !== undefined) {
+      const progress = game.salary ? Math.round((game.passiveIncome / game.salary) * 100) : 0;
+      return `
+        <div class="game-history-item">
+          <div class="game-history-header">
+            <span class="level-badge level-beginner">Escape the Paycheck</span>
+            <time>${completedAt}</time>
+          </div>
+          <div class="game-history-stats">
+            <div class="stat">
+              <span class="stat-label">Career:</span>
+              <span class="stat-value">${sanitize(game.career || 'Unknown')}</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Passive Income:</span>
+              <span class="stat-value">$${(game.passiveIncome || 0).toFixed(0)}</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Salary:</span>
+              <span class="stat-value">$${(game.salary || 0).toFixed(0)}</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Net Worth:</span>
+              <span class="stat-value">$${(game.netWorth || 0).toFixed(0)}</span>
+            </div>
+          </div>
+          <div class="progress-row">
+            <span class="stat-label">Passive vs Salary</span>
+            <div class="progress-bar slim">
+              <div class="progress-fill" style="width: ${Math.min(100, progress)}%"></div>
+            </div>
+          </div>
+          ${Array.isArray(game.assets) && game.assets.length ? `
+            <div class="asset-summary">
+              <span class="stat-label">Assets:</span>
+              <p>${game.assets.slice(0, 3).map(asset => sanitize(asset.name || 'Asset')).join(', ')}${game.assets.length > 3 ? ' +' + (game.assets.length - 3) + ' more' : ''}</p>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    if (game.profit !== undefined) {
+      return `
+        <div class="game-history-item">
+          <div class="game-history-header">
+            <span class="level-badge level-novice">Trading Game</span>
+            <time>${completedAt}</time>
+          </div>
+          <div class="game-history-stats">
+            <div class="stat">
+              <span class="stat-label">Initial:</span>
+              <span class="stat-value">$${game.initialCoins?.toFixed(2) || '0.00'}</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Final:</span>
+              <span class="stat-value">$${game.finalCoins?.toFixed(2) || '0.00'}</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Profit:</span>
+              <span class="stat-value ${game.profit >= 0 ? 'positive' : 'negative'}">${game.profit >= 0 ? '+' : ''}$${game.profit?.toFixed(2) || '0.00'}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="game-history-item">
+        <div class="game-history-header">
+          <span class="level-badge level-${game.level?.toLowerCase() || 'novice'}">${sanitize(game.level || 'Challenge')}</span>
+          <time>${completedAt}</time>
+        </div>
+        <div class="game-history-stats">
+          <div class="stat">
+            <span class="stat-label">Score:</span>
+            <span class="stat-value">${game.score || 0}</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Accuracy:</span>
+            <span class="stat-value">${game.accuracy || 0}%</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Correct:</span>
+            <span class="stat-value">${game.correctCount || 0}/${game.totalQuestions || 0}</span>
+          </div>
+        </div>
       </div>
     `;
   },
