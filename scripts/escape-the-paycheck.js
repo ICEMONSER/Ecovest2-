@@ -809,29 +809,8 @@
     return array[Math.floor(Math.random() * array.length)];
   }
 
-  function playTone(frequency, duration) {
-    try {
-      escapeGame.audioContext = escapeGame.audioContext || new (window.AudioContext || window.webkitAudioContext)();
-      const ctx = escapeGame.audioContext;
-      const oscillator = ctx.createOscillator();
-      const gain = ctx.createGain();
-      const now = ctx.currentTime;
-
-      oscillator.type = 'triangle';
-      oscillator.frequency.setValueAtTime(frequency, now);
-
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(0.18, now + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-
-      oscillator.connect(gain);
-      gain.connect(ctx.destination);
-
-      oscillator.start(now);
-      oscillator.stop(now + duration);
-    } catch (error) {
-      // Ignore sound errors (e.g., autoplay restrictions)
-    }
+  function playTone() {
+    // Sound disabled for this gameplay experience.
   }
 
   window.escapeGame = escapeGame;
