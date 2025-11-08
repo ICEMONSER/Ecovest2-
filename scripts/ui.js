@@ -68,7 +68,6 @@ const ui = {
     }
 
   },
-  
 
   // Modal controller
   openModal: (modalId) => {

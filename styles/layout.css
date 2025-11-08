@@ -57,31 +57,33 @@ nav .container {
   gap: var(--spacing-md);
 }
 
-/* User menu */
+/* User menu - Fixed in top right corner */
 .user-menu {
-  position: relative;
-  margin-left: var(--spacing-md);
+  position: fixed;
+  top: var(--spacing-md);
+  right: var(--spacing-md);
+  z-index: calc(var(--z-dropdown) + 1);
+  margin-left: 0;
 }
 
 .user-menu-toggle {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  padding: var(--spacing-xs) var(--spacing-sm);
+  padding: var(--spacing-xs);
   background: transparent;
+  border: none;
   border-radius: var(--border-radius);
   transition: var(--transition);
-  border: 2px solid transparent;
 }
 
 .user-menu-toggle:hover {
-  background: var(--gray-100);
+  background: transparent;
 }
 
 .user-menu-toggle:focus {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
-  border-color: var(--primary);
 }
 
 .user-avatar {
@@ -93,21 +95,20 @@ nav .container {
 .user-avatar .avatar-placeholder {
   width: 40px;
   height: 40px;
-  border: 2px solid var(--gray-300);
+  border: none;
   transition: var(--transition);
 }
 
 .user-avatar .avatar-image {
   width: 40px;
   height: 40px;
-  border: 2px solid var(--gray-300);
+  border: none;
   transition: var(--transition);
 }
 
 .user-menu-toggle:hover .user-avatar .avatar-placeholder,
 .user-menu-toggle:hover .user-avatar .avatar-image {
-  border-color: var(--primary);
-  box-shadow: var(--shadow-sm);
+  opacity: 0.8;
 }
 
 .user-menu-arrow {
@@ -122,6 +123,11 @@ nav .container {
 }
 
 @media (max-width: 480px) {
+  .user-menu {
+    top: var(--spacing-sm);
+    right: var(--spacing-sm);
+  }
+
   .user-menu-arrow {
     display: none;
   }
@@ -202,22 +208,13 @@ footer a:hover {
 /* Responsive */
 @media (max-width: 768px) {
   nav .container {
-    flex-direction: row;
+    flex-direction: column;
     gap: var(--spacing-md);
   }
 
   .nav-menu {
-    width: auto;
-    justify-content: flex-end;
-    padding-right: 0;
-  }
-
-  .user-menu {
-    margin-left: 0;
-  }
-
-  .user-menu-toggle {
-    padding: var(--spacing-xs);
+    width: 100%;
+    justify-content: center;
   }
 
   .user-menu-dropdown {
