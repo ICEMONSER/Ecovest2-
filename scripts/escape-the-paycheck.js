@@ -164,7 +164,6 @@ const escapeGame = {
 
     bindUI: () => {
       $('#rollDiceBtn')?.addEventListener('click', escapeGame.handleRoll);
-      $('#resetGameBtn')?.addEventListener('click', escapeGame.resetGame);
       $('#victoryCloseBtn')?.addEventListener('click', escapeGame.closeVictory);
       $('#victoryContinueBtn')?.addEventListener('click', escapeGame.shareVictory);
       $('#closeDealModal')?.addEventListener('click', escapeGame.closeDealModal);

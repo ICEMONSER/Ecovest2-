@@ -107,7 +107,7 @@ EMAILJS: {
 ## Step 6: Test It!
 
 1. Open your website in a browser
-2. Click **Sign In** button
+2. Click **Log In** button
 3. Click **Forgot password?** link
 4. Enter your email address (the one you connected to EmailJS)
 5. Click **Send OTP to Email**

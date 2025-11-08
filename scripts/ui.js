@@ -54,17 +54,11 @@ const ui = {
     } else {
       nav.innerHTML = `
         <div class="nav-brand">
-          <a href="./index.html" class="home-link">🏠 Home</a>
           <a href="./index.html">EcoVest+</a>
         </div>
         <div class="nav-menu">
-          <button class="btn btn-outline" id="signInBtn">Sign In</button>
-          <button class="btn btn-primary" id="signUpBtn">Sign Up</button>
         </div>
       `;
-
-      $('#signInBtn')?.addEventListener('click', () => ui.openModal('signInModal'));
-      $('#signUpBtn')?.addEventListener('click', () => ui.openModal('signUpModal'));
     }
 
   },
