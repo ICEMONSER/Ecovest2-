@@ -575,8 +575,10 @@ const escapeGame = {
     },
 
     recalculateNetWorth: () => {
-      const assetsValue = escapeGame.state.assets.reduce((sum, asset) => sum + (asset.value || asset.cost || 0), 0);
-      escapeGame.state.netWorth = escapeGame.state.cash + assetsValue - escapeGame.state.debt;
+      const cash = escapeGame.state.cash || 0;
+      const salary = escapeGame.state.salary || 0;
+      const expenses = escapeGame.state.expenses || 0;
+      escapeGame.state.netWorth = cash + salary - expenses;
     },
 
     render: () => {
@@ -603,7 +605,6 @@ const escapeGame = {
       $('#statSalary').textContent = format(escapeGame.state.salary);
       $('#statPassive').textContent = format(escapeGame.state.passiveIncome);
       $('#statExpenses').textContent = format(escapeGame.state.expenses);
-      $('#statDebt').textContent = format(escapeGame.state.debt);
       $('#statNetWorth').textContent = format(escapeGame.state.netWorth);
 
       const goalIncome = escapeGame.state.salary * CONFIG.ESCAPE_GAME.PASSIVE_GOAL_MULTIPLIER;

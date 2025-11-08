@@ -25,7 +25,7 @@ const CONFIG = {
   },
   ESCAPE_GAME: {
     BOARD_SIZE: 16,
-    PASSIVE_GOAL_MULTIPLIER: 1.01, // passive income must exceed salary by at least 1%
+    PASSIVE_GOAL_MULTIPLIER: 1,
     DOWNSIZE_TURNS: 1,
     CHARITY_BONUS: 200,
     STEP_DELAY: 240,
