@@ -496,6 +496,14 @@ const feed = {
       }
 
       container.innerHTML = comments.map(comment => feed.renderComment(comment)).join('');
+
+      container.querySelectorAll('.comment-delete-btn').forEach(button => {
+        button.addEventListener('click', () => {
+          const commentId = button.dataset.commentId;
+          const targetPostId = button.dataset.postId || postId;
+          feed.handleDeleteComment(targetPostId, commentId);
+        });
+      });
     } catch (e) {
       container.innerHTML = '<p class="error-message">Failed to load comments</p>';
     }
@@ -506,6 +514,13 @@ const feed = {
     const profile = store.profiles.get(comment.username);
     const level = getLevel(profile.profileScore || 0);
     const guidedBadge = comment.guided ? '<span class="guided-badge">✓ Guided</span>' : '';
+    const session = store.session.load();
+    const isOwnComment = session && comment.username === session.username;
+    const deleteButton = isOwnComment ? `
+      <button type="button" class="comment-delete-btn" data-comment-id="${comment.id}" data-post-id="${comment.postId}">
+        Delete
+      </button>
+    ` : '';
 
     return `
       <div class="comment-item">
@@ -518,7 +533,10 @@ const feed = {
           </div>
         </div>
         <p class="comment-content">${sanitize(comment.content)}</p>
-        <time class="comment-time">${formatTime(comment.createdAt)}</time>
+        <div class="comment-meta">
+          <time class="comment-time">${formatTime(comment.createdAt)}</time>
+          ${deleteButton}
+        </div>
       </div>
     `;
   },
@@ -765,6 +783,22 @@ const feed = {
       }
       menu.classList.remove('active');
     });
+  },
+
+  handleDeleteComment: async (postId, commentId) => {
+    if (!commentId) return;
+
+    const confirmed = confirm('Delete this comment?');
+    if (!confirmed) return;
+
+    try {
+      await api.deleteComment(commentId, postId);
+      ui.toast('Comment deleted.', 'success');
+      await feed.loadComments(postId);
+      await feed.loadPosts();
+    } catch (error) {
+      ui.toast(error?.message || 'Failed to delete comment', 'error');
+    }
   }
 };
 

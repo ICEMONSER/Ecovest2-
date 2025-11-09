@@ -1,4 +1,35 @@
 // API functions - Uses Firebase if available, falls back to localStorage
+const API_SERVER_BASE_URL = (typeof CONFIG !== 'undefined' && CONFIG.SERVER && CONFIG.SERVER.BASE_URL) ? CONFIG.SERVER.BASE_URL : null;
+
+const serverAvailable = () => Boolean(API_SERVER_BASE_URL);
+
+const callServer = async (path, { method = 'GET', headers, body } = {}) => {
+  if (!serverAvailable()) {
+    throw new Error('API server not configured');
+  }
+
+  const options = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(headers || {})
+    }
+  };
+
+  if (typeof body !== 'undefined') {
+    options.body = JSON.stringify(body);
+  }
+
+  const response = await fetch(`${API_SERVER_BASE_URL}${path}`, options);
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const message = data?.error || data?.message || 'Request failed';
+    throw new Error(message);
+  }
+
+  return data;
+};
 
 const api = {
   // Posts - Uses Firebase Realtime Database
@@ -250,6 +281,59 @@ const api = {
 
     await new Promise(resolve => setTimeout(resolve, CONFIG.API_DELAY));
     return comment;
+  },
+
+  deleteComment: async (commentId, postId) => {
+    const user = auth.getCurrentUser();
+    if (!user) {
+      throw new Error('Not authenticated');
+    }
+
+    if (!commentId) {
+      throw new Error('Comment id is required');
+    }
+
+    if (typeof firebaseServices !== 'undefined' &&
+        firebaseServices &&
+        firebaseServices.isInitialized() &&
+        typeof firebaseDB !== 'undefined' &&
+        firebaseDB) {
+      await firebaseDB.comments.remove(commentId);
+      return true;
+    }
+
+    if (serverAvailable()) {
+      await callServer(`/comments/${commentId}`, {
+        method: 'DELETE',
+        body: {
+          username: user.username,
+          uid: user.uid || null
+        }
+      });
+      return true;
+    }
+
+    const comments = store.comments.getAll();
+    const comment = comments.find(c => c.id === commentId);
+    if (!comment) {
+      throw new Error('Comment not found');
+    }
+
+    if (comment.username !== user.username) {
+      throw new Error('Not authorized to delete this comment');
+    }
+
+    const remaining = comments.filter(c => c.id !== commentId);
+    store.comments.save(remaining);
+
+    const post = store.posts.getAll().find(p => p.id === (postId || comment.postId));
+    if (post) {
+      post.comments = Math.max(0, (post.comments || 1) - 1);
+      store.posts.update(post.id, { comments: post.comments });
+    }
+
+    await new Promise(resolve => setTimeout(resolve, CONFIG.API_DELAY));
+    return true;
   },
 
   // Image upload - Uses Firebase Storage

@@ -160,6 +160,15 @@ const store = {
         return store.comments.save(comments);
       }
       return false;
+    },
+    remove: (id) => {
+      const comments = store.comments.getAll();
+      const filtered = comments.filter(c => c.id !== id);
+      const removed = filtered.length !== comments.length;
+      if (removed) {
+        store.comments.save(filtered);
+      }
+      return removed;
     }
   },
 

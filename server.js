@@ -425,6 +425,71 @@ app.post("/api/posts/:postId/comments", async (req, res) => {
   }
 });
 
+app.delete("/api/comments/:commentId", async (req, res) => {
+  const { commentId } = req.params;
+  const { username, uid } = req.body || {};
+  const cleanUsername = sanitizeString(username);
+  const cleanUid = sanitizeString(uid);
+
+  if (!cleanUsername) {
+    return res.status(400).json({ success: false, error: "Username is required." });
+  }
+
+  try {
+    if (realtimeDb) {
+      const commentRef = realtimeDb.ref(`comments/${commentId}`);
+      const snapshot = await commentRef.once("value");
+      if (!snapshot.exists()) {
+        return res.status(404).json({ success: false, error: "Comment not found." });
+      }
+
+      const comment = snapshot.val();
+      const ownsByUsername = !comment.username || comment.username === cleanUsername;
+      const ownsByUid = !comment.uid || (cleanUid && comment.uid === cleanUid);
+
+      if (!ownsByUsername && !ownsByUid) {
+        return res.status(403).json({ success: false, error: "Not authorised to delete this comment." });
+      }
+
+      await commentRef.remove();
+
+      if (comment.postId) {
+        const postRef = realtimeDb.ref(`posts/${comment.postId}`);
+        await postRef.transaction((post) => {
+          if (post) {
+            post.comments = Math.max(0, (post.comments || 1) - 1);
+          }
+          return post;
+        });
+      }
+    } else {
+      const commentIndex = memoryStore.comments.findIndex((c) => c.id === commentId);
+      if (commentIndex === -1) {
+        return res.status(404).json({ success: false, error: "Comment not found." });
+      }
+
+      const comment = memoryStore.comments[commentIndex];
+      if (comment.username !== cleanUsername) {
+        return res.status(403).json({ success: false, error: "Not authorised to delete this comment." });
+      }
+
+      memoryStore.comments.splice(commentIndex, 1);
+
+      if (comment.postId) {
+        const post = memoryStore.posts.find((p) => p.id === comment.postId);
+        if (post) {
+          post.comments = Math.max(0, (post.comments || 1) - 1);
+        }
+      }
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Failed to delete comment", error);
+    res.status(500).json({ success: false, error: "Failed to delete comment." });
+  }
+});
+
 app.post("/api/users/rename", async (req, res) => {
   const { oldUsername, newUsername } = req.body || {};
   const from = sanitizeString(oldUsername);

@@ -229,6 +229,45 @@ const firebaseDB = {
       }
 
       return { id: ref.key, ...commentData };
+    },
+
+    remove: async (commentId) => {
+      if (!firebaseServices.isInitialized()) {
+        throw new Error('Firebase not initialized');
+      }
+
+      const user = firebaseAuth.getCurrentUser();
+      if (!user) {
+        throw new Error('Not authenticated');
+      }
+
+      const commentRef = firebaseServices.database.ref(`comments/${commentId}`);
+      const snapshot = await commentRef.once('value');
+      if (!snapshot.exists()) {
+        throw new Error('Comment not found');
+      }
+
+      const comment = snapshot.val();
+      const ownsByUid = comment.uid && user.uid ? comment.uid === user.uid : false;
+      const ownsByUsername = comment.username ? comment.username === user.username : false;
+
+      if (!ownsByUid && !ownsByUsername) {
+        throw new Error('Not authorized to delete this comment');
+      }
+
+      await commentRef.remove();
+
+      if (comment.postId) {
+        const postRef = firebaseServices.database.ref(`posts/${comment.postId}`);
+        await postRef.transaction((post) => {
+          if (post) {
+            post.comments = Math.max(0, (post.comments || 1) - 1);
+          }
+          return post;
+        });
+      }
+
+      return true;
     }
   },
 
