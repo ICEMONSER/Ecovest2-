@@ -39,6 +39,14 @@ const ui = {
         menuDropdown.classList.toggle('active');
       });
 
+      const profileLink = menuDropdown?.querySelector('a[href="./profile.html"]');
+      profileLink?.addEventListener('click', (event) => {
+        event.preventDefault();
+        menuToggle?.setAttribute('aria-expanded', 'false');
+        menuDropdown?.classList.remove('active');
+        window.location.href = './profile.html';
+      });
+
       // Close menu on outside click
       document.addEventListener('click', (e) => {
         if (!menuToggle?.contains(e.target) && !menuDropdown?.contains(e.target)) {
