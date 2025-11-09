@@ -34,6 +34,8 @@ const profilePage = {
       return;
     }
 
+    profilePage.setupRenameForm();
+
     // Check if viewing own profile or another user's
     const urlParams = new URLSearchParams(window.location.search);
     const username = urlParams.get('user') || session.username;
@@ -106,6 +108,7 @@ const profilePage = {
             <span class="profile-menu-icon">⋯</span>
           </button>
           <ul class="profile-menu-dropdown" id="profileMenuDropdown" role="menu">
+            <li role="menuitem"><button id="renameAccountBtn" type="button">Rename Profile</button></li>
             <li role="menuitem"><button id="deleteAccountBtn">Delete Account</button></li>
           </ul>
         </div>
@@ -184,6 +187,16 @@ const profilePage = {
           menuToggle.setAttribute('aria-expanded', 'false');
           ui.openModal('deleteAccountModal');
         });
+        $('#renameAccountBtn')?.addEventListener('click', () => {
+          menuDropdown.classList.remove('active');
+          menuToggle.setAttribute('aria-expanded', 'false');
+          const input = $('#renameUsernameInput');
+          if (input) {
+            input.value = session.username;
+            input.setSelectionRange(0, session.username.length);
+          }
+          ui.openModal('renameAccountModal');
+        });
         const form = $('#deleteAccountForm');
         form?.addEventListener('submit', async (e) => {
           e.preventDefault();
@@ -207,6 +220,65 @@ const profilePage = {
 
     // Load tab content
     profilePage.loadTabContent(username);
+  },
+
+  setupRenameForm: () => {
+    const form = $('#renameAccountForm');
+    if (!form) return;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const input = $('#renameUsernameInput');
+      if (!input) return;
+
+      const submitBtn = form.querySelector('button[type="submit"]');
+      const newUsername = input.value.trim();
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving...';
+      }
+
+      try {
+        const result = await auth.renameUser(newUsername);
+        if (!result.success) {
+          ui.toast(result.error || 'Failed to rename profile.', 'error');
+          return;
+        }
+
+        if (result.unchanged) {
+          ui.toast('That is already your username.', 'info');
+          ui.closeModal('renameAccountModal');
+          return;
+        }
+
+        ui.toast('Username updated!', 'success');
+        ui.closeModal('renameAccountModal');
+        ui.mountNav();
+
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('user')) {
+          urlParams.set('user', result.username);
+          const newQuery = urlParams.toString();
+          const newUrl = newQuery ? `${window.location.pathname}?${newQuery}` : window.location.pathname;
+          window.history.replaceState({}, '', newUrl);
+        }
+
+        input.value = result.username;
+        await profilePage.loadProfile(result.username);
+        if (typeof feed !== 'undefined' && typeof feed.loadPosts === 'function') {
+          feed.loadPosts();
+        }
+      } catch (error) {
+        console.error('Rename form error:', error);
+        ui.toast(error?.message || 'Failed to rename profile.', 'error');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Save Username';
+        }
+      }
+    });
   },
 
   // Setup tabs

@@ -9,7 +9,8 @@ const CONFIG = {
     USER_PROFILES: 'ev.userProfiles',
     USER_ACCOUNTS: 'ev.userAccounts',
     FOLLOWS: 'ev.follows',
-    PASSWORD_RESETS: 'ev.passwordResets'
+    PASSWORD_RESETS: 'ev.passwordResets',
+    FEED_VERSION: 'ev.feed.version'
   },
   LEVELS: {
     BEGINNER: { min: 20, max: 100 },
@@ -41,6 +42,7 @@ const CONFIG = {
     MAX_SIZE: 20 * 1024 * 1024, // 20MB
     ALLOWED_TYPES: ['video/mp4', 'video/webm', 'video/quicktime']
   },
+  FEED_DATA_VERSION: 'v2.empty',
   API_DELAY: 300, // mock API delay in ms
   EMAILJS: {
     SERVICE_ID: 'service_qttkvw8', // Replace with your EmailJS service ID

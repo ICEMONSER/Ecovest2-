@@ -173,6 +173,7 @@ const escapeGame = {
         }
       });
       $('#goalCloseBtn')?.addEventListener('click', escapeGame.hideGoalOverlay);
+      $('#setBeginnerBtn')?.addEventListener('click', escapeGame.setBeginnerLevel);
     },
 
     handleRoll: async () => {
@@ -534,6 +535,48 @@ const escapeGame = {
       }
     },
 
+    setBeginnerLevel: async () => {
+      const session = store.session.load();
+      if (!session) {
+        ui.toast('Please sign in to update your level.', 'error');
+        return;
+      }
+
+      const profile = store.profiles.get(session.username) || {};
+      const updatedScore = Math.max(profile.profileScore || 0, CONFIG.LEVELS.BEGINNER.min);
+
+      store.profiles.update(session.username, {
+        profileScore: updatedScore,
+        level: 'Beginner'
+      });
+
+      const currentSession = store.session.load();
+      if (currentSession) {
+        store.session.save({ ...currentSession, level: 'Beginner' });
+      }
+
+      if (firebaseServices?.isInitialized?.()) {
+        try {
+          const user = firebaseAuth.getCurrentUser?.();
+          if (user?.uid) {
+            await firebaseDB.profiles.update(user.uid, {
+              profileScore: updatedScore,
+              level: 'Beginner'
+            });
+          }
+        } catch (error) {
+          console.warn('Failed to sync beginner level to Firebase:', error);
+        }
+      }
+
+      escapeGame.renderPlayerLevel();
+      ui.toast('Player level set to Beginner!', 'success');
+
+      setTimeout(() => {
+        window.location.href = './feed.html';
+      }, 600);
+    },
+
     resetState: () => {
       const careers = Object.keys(CAREERS);
       const randomKey = careers[Math.floor(Math.random() * careers.length)];
@@ -586,6 +629,7 @@ const escapeGame = {
       escapeGame.recalculateNetWorth();
       escapeGame.renderCareer();
       escapeGame.renderStats();
+      escapeGame.renderPlayerLevel();
       escapeGame.renderBoard();
       escapeGame.renderAssets();
       escapeGame.renderEventLog();
@@ -614,6 +658,37 @@ const escapeGame = {
       $('#progressFill').style.width = `${progress}%`;
       $('#progressAmount').textContent = `${format(escapeGame.state.passiveIncome)} / ${format(goalIncome)}`;
       $('#progressLabel').textContent = progress >= 100 ? 'Goal achieved!' : 'Passive vs Salary';
+    },
+
+    renderPlayerLevel: () => {
+      const chip = $('#playerLevelChip');
+      const button = $('#setBeginnerBtn');
+      if (!chip) return;
+
+      const session = store.session.load();
+      if (!session) {
+        chip.textContent = 'Level: --';
+        if (button) {
+          button.disabled = true;
+        }
+        return;
+      }
+
+      const profile = store.profiles.get(session.username) || {};
+      const score = profile.profileScore || 0;
+      const level = profile.level || getLevel(score) || 'Novice';
+
+      chip.textContent = `Level: ${level}`;
+
+      if (button) {
+        if (level === 'Beginner') {
+          button.disabled = true;
+          button.textContent = 'You are Beginner';
+        } else {
+          button.disabled = false;
+          button.textContent = 'Become Beginner';
+        }
+      }
     },
 
     renderBoard: () => {

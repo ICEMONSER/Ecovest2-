@@ -24,6 +24,11 @@ const feed = {
       return;
     }
 
+    // Clear legacy feed data on version bump
+    if (store?.maintenance?.ensureFeedVersion) {
+      store.maintenance.ensureFeedVersion();
+    }
+
     // Initialize sample data if needed
     store.initSampleData();
 

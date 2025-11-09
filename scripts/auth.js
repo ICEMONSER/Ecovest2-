@@ -48,13 +48,13 @@ const auth = {
     // Fallback to localStorage (for development/testing) - NO DELAY
     try {
       console.log('Using localStorage fallback for sign-in');
-      const account = store.accounts.getByEmail(email);
+    const account = store.accounts.getByEmail(email);
       
-      if (!account) {
+    if (!account) {
         console.log('Account not found for email:', email);
         console.log('Available accounts:', Object.keys(store.accounts.getAll()));
         return { success: false, error: 'No account found with this email. Please sign up first.' };
-      }
+    }
 
       console.log('Account found:', account.username);
       
@@ -63,29 +63,29 @@ const auth = {
       
       const profile = store.profiles.get(account.username);
       const roles = Array.isArray(profile.roles) ? profile.roles : (profile.role ? [profile.role] : []);
-      const session = {
-        username: account.username,
-        email: account.email,
+    const session = {
+      username: account.username,
+      email: account.email,
         loggedInAt: Date.now(),
         roles,
         avatarUrl: profile.avatarUrl || null,
         avatarUpdatedAt: profile.avatarUpdatedAt || profile.updatedAt || 0
-      };
+    };
 
       const saved = store.session.save(session);
       if (!saved) {
         return { success: false, error: 'Failed to save session' };
       }
 
-      ui.toast('Signed in successfully!', 'success');
-      ui.mountNav();
-      ui.closeModal('signInModal');
+    ui.toast('Signed in successfully!', 'success');
+    ui.mountNav();
+    ui.closeModal('signInModal');
 
-      if (window.location.pathname.includes('index.html') || window.location.pathname.endsWith('/')) {
-        window.location.href = './feed.html';
-      }
+    if (window.location.pathname.includes('index.html') || window.location.pathname.endsWith('/')) {
+      window.location.href = './feed.html';
+    }
 
-      return { success: true };
+    return { success: true };
     } catch (error) {
       console.error('LocalStorage sign-in error:', error);
       return { success: false, error: 'Sign in failed: ' + (error.message || 'Unknown error') };
@@ -365,6 +365,96 @@ const auth = {
     const ok = store.maintenance.updatePasswordByEmail(email, newPassword);
     if (!ok) return { success: false, error: 'Failed to update password' };
     return { success: true };
+  },
+
+  renameUser: async (desiredUsername) => {
+    const session = store.session.load();
+    if (!session) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const candidate = (desiredUsername || '').trim();
+    if (!candidate) {
+      return { success: false, error: 'Please enter a username.' };
+    }
+
+    const pattern = /^[A-Za-z0-9_]{3,20}$/;
+    if (!pattern.test(candidate)) {
+      return { success: false, error: 'Usernames must be 3-20 characters using letters, numbers, or _.' };
+    }
+
+    if (candidate === session.username) {
+      return { success: true, username: candidate, unchanged: true };
+    }
+
+    // Ensure local availability before any remote updates
+    try {
+      const profilesRaw = localStorage.getItem(CONFIG.STORAGE_KEYS.USER_PROFILES);
+      if (profilesRaw) {
+        const profiles = JSON.parse(profilesRaw);
+        if (profiles[candidate]) {
+          return { success: false, error: 'That username is already taken.' };
+        }
+      }
+    } catch (error) {
+      console.warn('Unable to validate username locally:', error);
+    }
+
+    const isFirebaseReady = typeof firebaseServices !== 'undefined' &&
+      firebaseServices &&
+      typeof firebaseServices.isInitialized === 'function' &&
+      firebaseServices.isInitialized() &&
+      typeof firebaseAuth !== 'undefined' &&
+      firebaseAuth;
+
+    if (isFirebaseReady && session.uid) {
+      try {
+        const newUsernameLower = candidate.toLowerCase();
+        const usernameRef = firebaseServices.database.ref(`usernames/${newUsernameLower}`);
+        const existing = await usernameRef.once('value');
+        if (existing.exists() && existing.val() !== session.uid) {
+          return { success: false, error: 'That username is already in use.' };
+        }
+
+        const updates = {};
+        updates[`profiles/${session.uid}/username`] = candidate;
+        updates[`profiles/${session.uid}/updatedAt`] = Date.now();
+        updates[`usernames/${session.username.toLowerCase()}`] = null;
+        updates[`usernames/${newUsernameLower}`] = session.uid;
+        await firebaseServices.database.ref().update(updates);
+
+        // Update posts and comments with new username label
+        const replaceMap = {};
+        const postsSnapshot = await firebaseServices.database.ref('posts')
+          .orderByChild('uid').equalTo(session.uid).once('value');
+        postsSnapshot.forEach(child => {
+          replaceMap[`posts/${child.key}/username`] = candidate;
+        });
+
+        const commentsSnapshot = await firebaseServices.database.ref('comments')
+          .orderByChild('uid').equalTo(session.uid).once('value');
+        commentsSnapshot.forEach(child => {
+          replaceMap[`comments/${child.key}/username`] = candidate;
+        });
+
+        if (Object.keys(replaceMap).length > 0) {
+          await firebaseServices.database.ref().update(replaceMap);
+        }
+      } catch (error) {
+        console.error('Firebase rename failed:', error);
+        return { success: false, error: error?.message || 'Failed to update username.' };
+      }
+    }
+
+    const renameResult = store.maintenance.renameUsername(session.username, candidate);
+    if (!renameResult.success) {
+      return renameResult;
+    }
+
+    const updatedSession = { ...store.session.load(), username: candidate };
+    store.session.save(updatedSession);
+
+    return { success: true, username: candidate };
   },
 
   // Delete current account (requires confirmation)

@@ -59,7 +59,7 @@ const store = {
         try {
           storage.setItem(CONFIG.SESSION_KEY, payload);
           inMemorySession = data;
-          return true;
+        return true;
         } catch (error) {
           console.warn('Failed to write session to storage:', error);
         }
@@ -398,6 +398,130 @@ const store = {
       } catch (e) {
         return false;
       }
+    },
+    renameUsername: (oldUsername, newUsername) => {
+      if (!oldUsername || !newUsername) {
+        return { success: false, error: 'Username is required.' };
+      }
+
+      const trimmed = newUsername.trim();
+      if (!trimmed) {
+        return { success: false, error: 'Username cannot be empty.' };
+      }
+
+      if (trimmed === oldUsername) {
+        return { success: true, username: trimmed, unchanged: true };
+      }
+
+      try {
+        // Validate characters (letters, numbers, underscore)
+        const pattern = /^[A-Za-z0-9_]{3,20}$/;
+        if (!pattern.test(trimmed)) {
+          return { success: false, error: 'Usernames must be 3-20 characters using letters, numbers, or _.' };
+        }
+
+        const profilesRaw = localStorage.getItem(CONFIG.STORAGE_KEYS.USER_PROFILES);
+        const profiles = profilesRaw ? JSON.parse(profilesRaw) : {};
+
+        if (!profiles[oldUsername]) {
+          return { success: false, error: 'Original profile not found.' };
+        }
+
+        if (profiles[trimmed]) {
+          return { success: false, error: 'That username is already taken.' };
+        }
+
+        const updatedProfile = { ...profiles[oldUsername], username: trimmed };
+        delete profiles[oldUsername];
+        profiles[trimmed] = updatedProfile;
+        localStorage.setItem(CONFIG.STORAGE_KEYS.USER_PROFILES, JSON.stringify(profiles));
+
+        // Update accounts mapping (email -> username)
+        const accounts = store.accounts.getAll();
+        let accountChanged = false;
+        Object.keys(accounts).forEach(email => {
+          if (accounts[email]?.username === oldUsername) {
+            accounts[email].username = trimmed;
+            accountChanged = true;
+          }
+        });
+        if (accountChanged) {
+          localStorage.setItem(CONFIG.STORAGE_KEYS.USER_ACCOUNTS, JSON.stringify(accounts));
+        }
+
+        // Update posts
+        const posts = store.posts.getAll();
+        let postsTouched = false;
+        posts.forEach(post => {
+          if (post.username === oldUsername) {
+            post.username = trimmed;
+            postsTouched = true;
+          }
+        });
+        if (postsTouched) {
+          store.posts.save(posts);
+        }
+
+        // Update comments
+        const comments = store.comments.getAll();
+        let commentsTouched = false;
+        comments.forEach(comment => {
+          if (comment.username === oldUsername) {
+            comment.username = trimmed;
+            commentsTouched = true;
+          }
+        });
+        if (commentsTouched) {
+          store.comments.save(comments);
+        }
+
+        // Update follows
+        const follows = store.follows.getAll();
+        let followsChanged = false;
+        if (follows[oldUsername]) {
+          follows[trimmed] = follows[oldUsername];
+          delete follows[oldUsername];
+          followsChanged = true;
+        }
+        Object.keys(follows).forEach(user => {
+          const list = follows[user] || [];
+          const index = list.indexOf(oldUsername);
+          if (index !== -1) {
+            list[index] = trimmed;
+            followsChanged = true;
+          }
+        });
+        if (followsChanged) {
+          localStorage.setItem(CONFIG.STORAGE_KEYS.FOLLOWS, JSON.stringify(follows));
+        }
+
+        // Update game history records
+        const historyRaw = localStorage.getItem(CONFIG.STORAGE_KEYS.GAME_HISTORY);
+        if (historyRaw) {
+          const history = JSON.parse(historyRaw);
+          let historyChanged = false;
+          history.forEach(entry => {
+            if (entry.username === oldUsername) {
+              entry.username = trimmed;
+              historyChanged = true;
+            }
+          });
+          if (historyChanged) {
+            localStorage.setItem(CONFIG.STORAGE_KEYS.GAME_HISTORY, JSON.stringify(history));
+          }
+        }
+
+        // Update session if needed
+        const session = store.session.load();
+        if (session?.username === oldUsername) {
+          store.session.save({ ...session, username: trimmed });
+        }
+
+        return { success: true, username: trimmed };
+      } catch (error) {
+        console.error('Failed to rename username:', error);
+        return { success: false, error: 'Failed to rename user.' };
+      }
     }
   },
 
@@ -477,6 +601,17 @@ const store = {
 
   // Initialize sample data
   initSampleData: () => {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const feedVersion = localStorage.getItem(CONFIG.STORAGE_KEYS.FEED_VERSION);
+        if (feedVersion === CONFIG.FEED_DATA_VERSION) {
+          return;
+        }
+      }
+    } catch (error) {
+      console.warn('Unable to check feed version flag:', error);
+    }
+
     // Check if data already exists
     if (store.posts.getAll().length > 0) return;
 
@@ -542,6 +677,37 @@ const store = {
 
     store.posts.save(samplePosts);
     store.comments.save(sampleComments);
+  }
+};
+
+store.maintenance.ensureFeedVersion = () => {
+  try {
+    if (typeof localStorage === 'undefined') {
+      return;
+    }
+
+    const currentVersion = localStorage.getItem(CONFIG.STORAGE_KEYS.FEED_VERSION);
+    if (currentVersion !== CONFIG.FEED_DATA_VERSION) {
+      store.maintenance.clearFeed();
+    }
+  } catch (error) {
+    console.warn('Failed to ensure feed version:', error);
+  }
+};
+
+store.maintenance.clearFeed = () => {
+  try {
+    store.posts.save([]);
+    store.comments.save([]);
+
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(CONFIG.STORAGE_KEYS.FEED_VERSION, CONFIG.FEED_DATA_VERSION);
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Failed to clear community feed:', error);
+    return false;
   }
 };
 

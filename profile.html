@@ -52,9 +52,27 @@
     </div>
   </div>
 
+  <!-- Rename Account Modal -->
+  <div class="modal" id="renameAccountModal" role="dialog" aria-labelledby="renameAccountTitle" aria-hidden="true">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="renameAccountTitle">Rename Profile</h2>
+        <button class="modal-close" aria-label="Close modal">×</button>
+      </div>
+      <form id="renameAccountForm">
+        <p>Choose a new display name for your profile. This will update your past posts and comments too.</p>
+        <div class="form-group">
+          <label for="renameUsernameInput" class="form-label">New username</label>
+          <input type="text" id="renameUsernameInput" class="form-input" required pattern="[A-Za-z0-9_]{3,20}" minlength="3" maxlength="20" placeholder="e.g. cashflow_hero">
+          <small class="form-hint">Use 3-20 characters, letters/numbers/underscores only.</small>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Save Username</button>
+      </form>
+    </div>
+  </div>
+
   <footer>
     <div class="container">
-      <p>&copy; 2024 EcoVest+. All rights reserved.</p>
       <p><a href="terms.html">Terms of Service</a></p>
     </div>
   </footer>
@@ -77,7 +95,7 @@
       FIREBASE_APP_ID: '1:63854480161:web:bf94c2bbd0c5b4c4650c60'
     };
   </script>
-  
+
   <script src="./scripts/config.js"></script>
   <script src="./scripts/firebase-config.js"></script>
   <script src="./scripts/firebase-auth.js"></script>
